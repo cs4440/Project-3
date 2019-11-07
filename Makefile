@@ -7,8 +7,10 @@ LDFLAGS         := -lm -lstdc++ -pthread
 INC             := include
 SRC             := src
 PROC            := proc
-TEST            := tests
+TESTDIR         := tests
+TESTS           := test
 SHEL            := state_machine.o token.o tokenizer.o parser.o shell.o
+FS              := entry.o file.o directory.o filesystem.o
 ALL             := myshell
 
 # $@ targt name
@@ -45,7 +47,34 @@ shell.o: ${SRC}/shell.cpp\
 	${INC}/shell.h
 	$(CXX) $(CXXFLAGS) -c $<
 
+# FILE SYSTEM
+
+entry.o: ${SRC}/entry.cpp\
+	${INC}/entry.h
+	$(CXX) $(CXXFLAGS) -c $<
+
+file.o: ${SRC}/file.cpp\
+	${INC}/file.h
+	$(CXX) $(CXXFLAGS) -c $<
+
+directory.o: ${SRC}/directory.cpp\
+	${INC}//directory.h
+	$(CXX) $(CXXFLAGS) -c $<
+
+filesystem.o: ${SRC}/filesystem.cpp\
+	${INC}/filesystem.h
+	$(CXX) $(CXXFLAGS) -c $<
+
+# TESTS
+tests: $(TESTS)
+
+test: test.o $(FS)
+	$(CXX) -o $@ $^
+
+test.o: $(TESTDIR)/test.cpp
+	$(CXX) $(CXXFLAGS) -c $<
+
 .PHONY: clean
 
 clean:
-	rm -f *.o *.out $(ALL)
+	rm -f *.o *.out $(ALL) $(TESTS)
