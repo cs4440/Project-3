@@ -2,13 +2,7 @@
 
 namespace fs {
 
-Directory::~Directory() {
-    remove_files();
-
-    for(auto it = _dirs.begin(); it != _dirs.end(); ++it)
-        _recursive_remove_dir(it->second);
-    remove_dirs();
-}
+Directory::~Directory() { _delete_nodes(this); }
 
 bool Directory::empty() const { return size() == 0; }
 
@@ -18,19 +12,16 @@ std::size_t Directory::files_size() const { return _files.size(); }
 
 std::size_t Directory::size() const { return _dirs.size() + _files.size(); }
 
-std::shared_ptr<Directory> Directory::parent() const { return _parent; }
+Directory* Directory::parent() const { return _parent; }
 
-const std::map<std::string, std::shared_ptr<Directory> >& Directory::dirs()
-    const {
+const std::map<std::string, Directory*>& Directory::dirs() const {
     return _dirs;
 }
 
-const std::map<std::string, std::shared_ptr<File> >& Directory::files() const {
-    return _files;
-}
+const std::map<std::string, File*>& Directory::files() const { return _files; }
 
-std::shared_ptr<Directory> Directory::find_dir(std::string n) const {
-    std::shared_ptr<Directory> dir = nullptr;
+Directory* Directory::find_dir(std::string n) const {
+    Directory* dir = nullptr;
     auto find = _dirs.find(n);
 
     if(find != _dirs.end()) dir = find->second;
@@ -38,8 +29,8 @@ std::shared_ptr<Directory> Directory::find_dir(std::string n) const {
     return dir;
 }
 
-std::shared_ptr<File> Directory::find_file(std::string n) const {
-    std::shared_ptr<File> file = nullptr;
+File* Directory::find_file(std::string n) const {
+    File* file = nullptr;
     auto find = _files.find(n);
 
     if(find != _files.end()) file = find->second;
@@ -47,26 +38,24 @@ std::shared_ptr<File> Directory::find_file(std::string n) const {
     return file;
 }
 
-std::shared_ptr<Directory> Directory::add_dir(std::string n,
-                                              std::shared_ptr<Directory> p) {
-    std::shared_ptr<Directory> new_dir = nullptr;
+Directory* Directory::add_dir(std::string n) {
+    Directory* new_dir = nullptr;
     auto find = _dirs.find(n);
 
     if(find == _dirs.end()) {
-        new_dir = std::shared_ptr<Directory>(new Directory(n, p));
-        _dirs[n] = new_dir;
+        _dirs[n] = new Directory(n, this);
         update_last_updated();
     }
 
     return new_dir;
 }
 
-std::shared_ptr<File> Directory::add_file(std::string n) {
-    std::shared_ptr<File> new_file = nullptr;
+File* Directory::add_file(std::string n) {
+    File* new_file = nullptr;
     auto find = _files.find(n);
 
     if(find == _files.end()) {  // if doesn't exist, add
-        new_file = std::shared_ptr<File>(new File(n));
+        new_file = new File(n);
         _files[n] = new_file;
         update_last_updated();
     }
@@ -110,13 +99,23 @@ void Directory::remove_files() {
     update_last_updated();
 }
 
-void Directory::_recursive_remove_dir(std::shared_ptr<Directory> node) {
+void Directory::_delete_nodes(Directory* node) {
     if(node) {
+        auto files = node->files();
+        for(auto it = files.begin(); it != files.end(); ++it) {
+            delete it->second;
+            it->second = nullptr;
+        }
         node->remove_files();
 
         auto dirs = node->dirs();
-        for(auto it = dirs.begin(); it != dirs.end(); ++it)
-            _recursive_remove_dir(it->second);
+        for(auto it = dirs.begin(); it != dirs.end(); ++it) {
+            auto dir = it->second;
+            _delete_nodes(dir);
+
+            delete it->second;
+            it->second = nullptr;
+        }
         node->remove_dirs();
     }
 }

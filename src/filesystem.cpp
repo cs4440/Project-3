@@ -5,8 +5,7 @@ namespace fs {
 FileSystem::FileSystem() : _root(nullptr), _current(nullptr) {}
 
 FileSystem::~FileSystem() {
-    _root->remove_dirs();
-    _root->remove_files();
+    if(_root) delete _root;
 }
 
 bool FileSystem::empty() const { return _current->empty(); }
@@ -17,30 +16,27 @@ std::size_t FileSystem::files_size() const { return _current->files_size(); }
 
 std::size_t FileSystem::size() const { return _current->size(); }
 
-std::shared_ptr<Directory> FileSystem::current() const { return _current; }
+Directory* FileSystem::current() const { return _current; }
 
-std::shared_ptr<Directory> FileSystem::root() const { return _root; }
+Directory* FileSystem::root() const { return _root; }
 
-const std::map<std::string, std::shared_ptr<Directory> >& FileSystem::dirs()
-    const {
+const std::map<std::string, Directory*>& FileSystem::dirs() const {
     return _current->dirs();
 }
 
-const std::map<std::string, std::shared_ptr<File> >& FileSystem::files() const {
+const std::map<std::string, File*>& FileSystem::files() const {
     return _current->files();
 }
 
-std::shared_ptr<Directory> FileSystem::find_dir(std::string n) const {
+Directory* FileSystem::find_dir(std::string n) const {
     return _current->find_dir(n);
 }
 
-std::shared_ptr<File> FileSystem::find_file(std::string n) const {
+File* FileSystem::find_file(std::string n) const {
     return _current->find_file(n);
 }
 
-void FileSystem::init() {
-    _root = _current = std::shared_ptr<Directory>(new Directory("root"));
-}
+void FileSystem::init() { _root = _current = new Directory("root"); }
 
 // if change directory fails
 // then reset current and change path to entry that fails
@@ -48,7 +44,7 @@ bool FileSystem::change_dir(std::string path) {
     bool success = true;
     std::queue<std::string> entries;
     std::string entry;
-    std::shared_ptr<Directory> find, current = _current;
+    Directory *find = nullptr, *current = _current;
 
     entries = _parse_path(path);  // tokenize path
 
@@ -64,7 +60,7 @@ bool FileSystem::change_dir(std::string path) {
         } else if(entry == ".") {
             // do nothing
         } else {
-            auto find = current->find_dir(entry);
+            find = current->find_dir(entry);
 
             if(find)
                 current = find;
@@ -80,13 +76,9 @@ bool FileSystem::change_dir(std::string path) {
     return success;
 }
 
-std::shared_ptr<Directory> FileSystem::add_dir(std::string n) {
-    return _current->add_dir(n, _current);
-}
+Directory* FileSystem::add_dir(std::string n) { return _current->add_dir(n); }
 
-std::shared_ptr<File> FileSystem::add_file(std::string n) {
-    return _current->add_file(n);
-}
+File* FileSystem::add_file(std::string n) { return _current->add_file(n); }
 
 bool FileSystem::remove_dir(std::string n) { return _current->remove_dir(n); }
 
@@ -97,7 +89,7 @@ bool FileSystem::remove_file(std::string n) { return _current->remove_file(n); }
 void FileSystem::remove_files() { _current->remove_files(); }
 
 std::queue<std::string> FileSystem::_parse_path(std::string path) {
-    char* token;
+    char* token = nullptr;
     std::queue<std::string> entries;
 
     if(!path.empty()) {
