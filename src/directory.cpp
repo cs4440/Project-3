@@ -3,71 +3,99 @@
 namespace fs {
 
 Directory::~Directory() {
-    remove_files();
-
-    for(auto it = _dirs.begin(); it != _dirs.end(); ++it) {
-        if(it->second) _delete_dir(it->second);
-        _dirs.erase(it);
-    }
+    // remove_dirs();
+    // remove_files();
 }
 
-bool Directory::empty() const { return get_size() == 0; }
+bool Directory::empty() const { return size() == 0; }
 
-std::size_t Directory::get_dirs_size() const { return _dirs.size(); }
+std::size_t Directory::dirs_size() const { return _dirs.size(); }
 
-std::size_t Directory::get_files_size() const { return _files.size(); }
+std::size_t Directory::files_size() const { return _files.size(); }
 
-std::size_t Directory::get_size() const { return _dirs.size() + _files.size(); }
+std::size_t Directory::size() const { return _dirs.size() + _files.size(); }
 
-std::map<std::string, Directory *> Directory::get_dirs() const { return _dirs; }
+std::shared_ptr<Directory> Directory::parent() const { return _parent; }
 
-std::map<std::string, File *> Directory::get_files() const { return _files; }
-
-void Directory::add_dir(Directory *d) { _dirs[d->name()] = d; }
-
-void Directory::add_file(File *f) { _files[f->name()] = f; }
-
-void Directory::remove_dir(std::string n) {
-    auto find = _dirs.find(n);  // find dir by string
-
-    if(find != _dirs.end()) {     // if found
-        auto dir = find->second;  // get pointer to Directory
-
-        if(dir) _delete_dir(dir);  // if dir is not null, delete
-        _dirs.erase(find);         // erase entry in map
-    }
+const std::map<std::string, std::shared_ptr<Directory> >& Directory::dirs()
+    const {
+    return _dirs;
 }
 
-void Directory::remove_file(std::string n) {
-    auto find = _files.find(n);  // find file by string
-
-    if(find != _files.end()) {  // if found
-        auto file = _files[n];  // get pointer to File
-
-        if(file) delete file;  // if file is not null, delete
-        _files.erase(find);    // erase entry in map
-    }
+const std::map<std::string, std::shared_ptr<File> >& Directory::files() const {
+    return _files;
 }
 
-void Directory::remove_files() {
-    for(auto it = _files.begin(); it != _files.end(); ++it) {
-        if(it->second) delete it->second;  // if file is not null, delete
-        _files.erase(it);                  // erase entry
-    }
+std::shared_ptr<Directory> Directory::find_dir(std::string n) const {
+    std::shared_ptr<Directory> dir = nullptr;
+    auto find = _dirs.find(n);
+
+    if(find != _dirs.end()) dir = find->second;
+
+    return dir;
 }
 
-void Directory::_delete_dir(Directory *node) {
-    if(node) {                    // if node is not null
-        node->remove_files();     // remove all files
-        auto dirs = node->_dirs;  // get directory map
+std::shared_ptr<File> Directory::find_file(std::string n) const {
+    std::shared_ptr<File> file = nullptr;
+    auto find = _files.find(n);
 
-        // iterate through map of Directory
-        for(auto it = dirs.begin(); it != dirs.end(); ++it) {
-            // recursively call _delete_dir with Directory pointer
-            if(it->second) _delete_dir(it->second);
-            dirs.erase(it);
-        }
-    }
+    if(find != _files.end()) file = find->second;
+
+    return file;
 }
+
+std::shared_ptr<Directory> Directory::add_dir(std::string n,
+                                              std::shared_ptr<Directory> p) {
+    std::shared_ptr<Directory> new_dir = nullptr;
+    auto find = _dirs.find(n);
+
+    if(find == _dirs.end()) {
+        new_dir = std::shared_ptr<Directory>(new Directory(n, p));
+
+        _dirs[n] = new_dir;
+    }
+
+    return new_dir;
+}
+
+std::shared_ptr<File> Directory::add_file(std::string n) {
+    std::shared_ptr<File> new_file = nullptr;
+    auto find = _files.find(n);
+
+    if(find == _files.end()) {  // if doesn't exist, add
+        new_file = std::shared_ptr<File>(new File(n));
+        _files[n] = new_file;
+    }
+
+    return new_file;
+}
+
+bool Directory::remove_dir(std::string n) {
+    bool is_removed = true;
+    auto find = _dirs.find(n);
+
+    if(find != _dirs.end())
+        _dirs.erase(find);
+    else
+        is_removed = false;
+
+    return is_removed;
+}
+
+void Directory::remove_dirs() { _dirs.clear(); }
+
+bool Directory::remove_file(std::string n) {
+    bool is_removed = true;
+    auto find = _files.find(n);
+
+    if(find != _files.end())
+        _files.erase(find);
+    else
+        is_removed = false;
+
+    return is_removed;
+}
+
+void Directory::remove_files() { _files.clear(); }
 
 }  // namespace fs

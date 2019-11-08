@@ -1,6 +1,9 @@
 #ifndef FILESYSTEM_H
 #define FILESYSTEM_H
 
+#include <iostream>
+#include <memory>
+#include <queue>
 #include "directory.h"
 
 namespace fs {
@@ -20,24 +23,35 @@ public:
     void print_dirs() const;     // print current directories
     void print_files() const;    // print current files
 
-    std::map<std::string, Directory>* get_dirs() const;  // get current dirs
-    std::map<std::string, File>* get_files() const;      // get current files
-    Directory& get_dir(std::string d) const;  // get target from current dir
-    File& get_file(std::string f) const;      // get file form current dir
+    bool empty() const;
+    std::size_t dirs_size() const;
+    std::size_t files_size() const;
+    std::size_t size() const;
+
+    std::shared_ptr<Directory> current() const;
+    std::shared_ptr<Directory> root() const;
+
+    const std::map<std::string, std::shared_ptr<Directory> >& dirs() const;
+    const std::map<std::string, std::shared_ptr<File> >& files() const;
+    std::shared_ptr<Directory> find_dir(std::string n) const;
+    std::shared_ptr<File> find_file(std::string n) const;
 
     // MUTATORS
-    void add_to_cur_dirs(Directory d);  // add to current dirs
-    void add_to_cur_files(File f);      // add to current files
-    void remove_dir(std::string n);     // recursively remove dirs and files
-                                        // from target directory
-    void remove_file(std::string n);    // remove file form current files
+    void init();
+    bool change_dir(std::string& path);
+
+    std::shared_ptr<Directory> add_dir(std::string n);
+    std::shared_ptr<File> add_file(std::string n);
+    bool remove_dir(std::string n);
+    void remove_dirs();
+    bool remove_file(std::string n);
+    void remove_files();
 
 private:
-    Directory* _root;
-    Directory* _current;
+    std::shared_ptr<Directory> _root;     // never be changed after init
+    std::shared_ptr<Directory> _current;  // points to current dir node
 
-    // void _copy_root(Directory* dest, Directory* src);
-    // void _delete_node(Directory* node);
+    std::queue<std::string> _parse_path(std::string path);
 };
 
 }  // namespace fs
