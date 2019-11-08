@@ -46,7 +46,6 @@ private:
     std::map<std::string, Directory*> _dirs;
     std::map<std::string, File*> _files;
 
-    void _delete_nodes(Directory* node);
     Directory* _traverse_path(std::queue<std::string>& entries,
                               Directory* node) const;
 };

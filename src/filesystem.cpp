@@ -2,49 +2,85 @@
 
 namespace fs {
 
-FileSystem::FileSystem() : _root(nullptr), _current(nullptr) {}
+FileSystem::FileSystem() : _root(nullptr) {}
 
 FileSystem::~FileSystem() {
     if(_root) delete _root;
 }
 
-bool FileSystem::empty() const { return _current->empty(); }
+std::ostream& FileSystem::print_entries(std::ostream& outs) const {
+    print_dirs(outs);
+    print_files(outs);
 
-std::size_t FileSystem::dirs_size() const { return _current->dirs_size(); }
+    return outs;
+}
 
-std::size_t FileSystem::files_size() const { return _current->files_size(); }
+std::ostream& FileSystem::print_dirs(std::ostream& outs) const {
+    auto dirs = _cwd.back()->dirs();
+    for(auto it = dirs.begin(); it != dirs.end(); ++it)
+        outs << it->first << std::endl;
 
-std::size_t FileSystem::size() const { return _current->size(); }
+    return outs;
+}
 
-Directory* FileSystem::current() const { return _current; }
+std::ostream& FileSystem::print_files(std::ostream& outs) const {
+    auto files = _cwd.back()->files();
+    for(auto it = files.begin(); it != files.end(); ++it)
+        outs << it->first << std::endl;
+
+    return outs;
+}
+
+std::ostream& FileSystem::print_cwd(std::ostream& outs) const {
+    if(_cwd.size() == 1)
+        outs << _cwd.front()->name();
+    else
+        for(auto it = ++_cwd.begin(); it != _cwd.end(); ++it)
+            outs << '/' << (*it)->name();
+
+    return outs;
+}
+
+bool FileSystem::empty() const { return current()->empty(); }
+
+std::size_t FileSystem::dirs_size() const { return current()->dirs_size(); }
+
+std::size_t FileSystem::files_size() const { return current()->files_size(); }
+
+std::size_t FileSystem::size() const { return current()->size(); }
+
+Directory* FileSystem::current() const { return _cwd.back(); }
 
 Directory* FileSystem::root() const { return _root; }
 
 const std::map<std::string, Directory*>& FileSystem::dirs() const {
-    return _current->dirs();
+    return current()->dirs();
 }
 
 const std::map<std::string, File*>& FileSystem::files() const {
-    return _current->files();
+    return current()->files();
 }
 
 Directory* FileSystem::find_dir(std::string n) const {
-    return _current->find_dir(n);
+    return current()->find_dir(n);
 }
 
 File* FileSystem::find_file(std::string n) const {
-    return _current->find_file(n);
+    return current()->find_file(n);
 }
 
-void FileSystem::init() { _root = _current = new Directory("root"); }
+void FileSystem::init() {
+    _root = new Directory("/");
+    _cwd.push_back(_root);
+}
 
-// if change directory fails
-// then reset current and change path to entry that fails
+// if path is invalid, _cwd is not changed
 bool FileSystem::change_dir(std::string path) {
     bool success = true;
+    Directory* find = nullptr;
+    std::list<Directory*> cwd = _cwd;
     std::queue<std::string> entries;
     std::string entry;
-    Directory *find = nullptr, *current = _current;
 
     entries = _parse_path(path);  // tokenize path
 
@@ -53,17 +89,18 @@ bool FileSystem::change_dir(std::string path) {
         entry = entries.front();
         entries.pop();
 
-        if(entry == "/")
-            current = _root;
-        else if(entry == "..") {
-            if(current->parent()) current = current->parent();
+        if(entry == "/") {
+            cwd.clear();
+            cwd.push_back(_root);
+        } else if(entry == "..") {
+            if(!cwd.empty() && cwd.back()->name() != "/") cwd.pop_back();
         } else if(entry == ".") {
             // do nothing
         } else {
-            find = current->find_dir(entry);
+            find = cwd.back()->find_dir(entry);
 
             if(find)
-                current = find;
+                cwd.push_back(find);
             else {
                 success = false;
                 break;
@@ -71,22 +108,24 @@ bool FileSystem::change_dir(std::string path) {
         }
     }
 
-    if(success) _current = current;
+    if(success) _cwd = cwd;
 
     return success;
 }
 
-Directory* FileSystem::add_dir(std::string n) { return _current->add_dir(n); }
+Directory* FileSystem::add_dir(std::string n) { return current()->add_dir(n); }
 
-File* FileSystem::add_file(std::string n) { return _current->add_file(n); }
+File* FileSystem::add_file(std::string n) { return current()->add_file(n); }
 
-bool FileSystem::remove_dir(std::string n) { return _current->remove_dir(n); }
+bool FileSystem::remove_dir(std::string n) { return current()->remove_dir(n); }
 
-void FileSystem::remove_dirs() { _current->remove_dirs(); }
+void FileSystem::remove_dirs() { current()->remove_dirs(); }
 
-bool FileSystem::remove_file(std::string n) { return _current->remove_file(n); }
+bool FileSystem::remove_file(std::string n) {
+    return current()->remove_file(n);
+}
 
-void FileSystem::remove_files() { _current->remove_files(); }
+void FileSystem::remove_files() { current()->remove_files(); }
 
 std::queue<std::string> FileSystem::_parse_path(std::string path) {
     char* token = nullptr;

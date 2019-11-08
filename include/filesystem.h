@@ -2,6 +2,8 @@
 #define FILESYSTEM_H
 
 #include <cstring>
+#include <iostream>
+#include <list>
 #include <map>
 #include <queue>
 #include <string>
@@ -20,10 +22,10 @@ public:
     FileSystem& operator=(const FileSystem& rhs);
 
     // ACCESSORS
-    void print_root() const;     // recursively print ALL dirs and files
-    void print_current() const;  // print both curent dirs and files
-    void print_dirs() const;     // print current directories
-    void print_files() const;    // print current files
+    std::ostream& print_entries(std::ostream& outs = std::cout) const;
+    std::ostream& print_dirs(std::ostream& outs = std::cout) const;
+    std::ostream& print_files(std::ostream& outs = std::cout) const;
+    std::ostream& print_cwd(std::ostream& outs = std::cout) const;
 
     bool empty() const;
     std::size_t dirs_size() const;
@@ -49,9 +51,14 @@ public:
     bool remove_file(std::string n);
     void remove_files();
 
+    // FRIENDS
+    friend std::ostream& operator<<(std::ostream& outs, const FileSystem& fs) {
+        return fs.print_cwd(outs);  // return output
+    }
+
 private:
-    Directory* _root;     // never be changed after init
-    Directory* _current;  // points to current dir node
+    std::list<Directory*> _cwd;
+    Directory* _root;  // never be changed after init
 
     // convert a path string to queue of entry
     std::queue<std::string> _parse_path(std::string path);

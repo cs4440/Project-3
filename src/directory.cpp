@@ -2,7 +2,10 @@
 
 namespace fs {
 
-Directory::~Directory() { _delete_nodes(this); }
+Directory::~Directory() {
+    remove_files();
+    remove_dirs();
+}
 
 bool Directory::empty() const { return size() == 0; }
 
@@ -82,6 +85,7 @@ bool Directory::remove_dir(std::string n) {
 }
 
 void Directory::remove_dirs() {
+    for(auto it = _dirs.begin(); it != _dirs.end(); ++it) delete it->second;
     _dirs.clear();
     update_last_updated();
 }
@@ -100,29 +104,9 @@ bool Directory::remove_file(std::string n) {
 }
 
 void Directory::remove_files() {
+    for(auto it = _files.begin(); it != _files.end(); ++it) delete it->second;
     _files.clear();
     update_last_updated();
-}
-
-void Directory::_delete_nodes(Directory* node) {
-    if(node) {
-        auto files = node->files();
-        for(auto it = files.begin(); it != files.end(); ++it) {
-            delete it->second;
-            it->second = nullptr;
-        }
-        node->remove_files();
-
-        auto dirs = node->dirs();
-        for(auto it = dirs.begin(); it != dirs.end(); ++it) {
-            auto dir = it->second;
-            _delete_nodes(dir);
-
-            delete it->second;
-            it->second = nullptr;
-        }
-        node->remove_dirs();
-    }
 }
 
 // recursively traverse a path starting from node
