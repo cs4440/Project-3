@@ -1,10 +1,10 @@
 #ifndef FILESYSTEM_H
 #define FILESYSTEM_H
 
-#include <iostream>
 #include <memory>
 #include <queue>
 #include "directory.h"
+#include "file.h"
 
 namespace fs {
 

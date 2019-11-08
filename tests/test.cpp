@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include <iostream>
 #include <map>
 #include <string>
@@ -63,6 +64,12 @@ int main() {
     if(!fs.change_dir(path))
         std::cout << "changing path failed at: " << path << std::endl;
     std::cout << "current node: " << fs.current()->name() << std::endl;
+
+    std::cout << "\nrinting created, last_accessed, and last_created at root"
+              << std::endl;
+    std::cout << "created: " << fs.root()->created_cstr();
+    std::cout << "last_accessed: " << fs.root()->last_accessed_cstr();
+    std::cout << "last_updated: " << fs.root()->last_updated_cstr();
 
     return 0;
 }

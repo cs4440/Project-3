@@ -53,6 +53,7 @@ std::shared_ptr<Directory> Directory::add_dir(std::string n,
         new_dir = std::shared_ptr<Directory>(new Directory(n, p));
 
         _dirs[n] = new_dir;
+        update_last_updated();
     }
 
     return new_dir;

@@ -1,25 +1,31 @@
 #ifndef ENTRY_H
 #define ENTRY_H
 
+#include <ctime>
 #include <string>
 
 namespace fs {
 
 class Entry {
 public:
-    Entry(std::string n) : _name(n) {}
+    Entry(std::string n);
 
     // ACCESSORS
-    std::string name() const { return _name; }
-    long created() const { return _created; }
-    long last_updated() const { return _last_updated; }
-    long last_access() const { return _last_accessed; }
+    std::string name() const;
+    time_t created() const;
+    char *created_cstr() const;
+    time_t last_accessed() const;
+    char *last_accessed_cstr() const;
+    time_t last_updated() const;
+    char *last_updated_cstr() const;
 
     // MUTATORS
-    void set_name(std::string n) { _name = n; }
-    void set_created(long d) { _created = d; }
-    void set_last_access(long d) { _last_accessed = d; }
-    void set_last_updated(long d) { _last_updated = d; }
+    void set_name(std::string n);
+    void set_created(time_t t);
+    void set_last_access(time_t t);
+    void set_last_updated(time_t t);
+    void update_last_accessed();
+    void update_last_updated();
 
     // FRIENDS
     friend bool operator==(const fs::Entry &lhs, const fs::Entry &rhs) {
@@ -43,10 +49,10 @@ public:
     }
 
 protected:
-    long _created;
-    long _last_accessed;
-    long _last_updated;
     std::string _name;
+    time_t _created;
+    time_t _last_accessed;
+    time_t _last_updated;
 };
 
 }  // namespace fs

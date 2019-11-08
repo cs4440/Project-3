@@ -13,7 +13,11 @@ class Directory : public Entry {
 public:
     Directory(std::string n, std::shared_ptr<Directory> p = nullptr)
         : Entry(n), _parent(p) {}
+
+    // BIG THREE
     ~Directory();
+    Directory(const Directory& src);
+    Directory& operator=(const Directory& rhs);
 
     // ACCESSOR
     bool empty() const;
