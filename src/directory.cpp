@@ -38,6 +38,11 @@ File* Directory::find_file(std::string n) const {
     return file;
 }
 
+// return a node from path; else nullptr;
+Directory* Directory::find_path(std::queue<std::string>& entries) {
+    return _traverse_path(entries, this);
+}
+
 Directory* Directory::add_dir(std::string n) {
     Directory* new_dir = nullptr;
     auto find = _dirs.find(n);
@@ -118,6 +123,49 @@ void Directory::_delete_nodes(Directory* node) {
         }
         node->remove_dirs();
     }
+}
+
+// recursively traverse a path starting from node
+// return node on success; else nullptr
+Directory* Directory::_traverse_path(std::queue<std::string>& entries,
+                                     Directory* node) const {
+    if(entries.size()) {
+        std::string entry = entries.front();
+
+        if(entry == "/") {
+            entries.pop();
+
+            // find root node
+            while(node->parent()) node = node->parent();
+
+            if(entries.empty())
+                return node;
+            else
+                return _traverse_path(entries, node);
+        } else if(entry == "..") {
+            entries.pop();
+
+            if(node->parent())
+                return _traverse_path(entries, node->parent());
+            else
+                return node;
+        } else {
+            if(entry == ".") {
+                entries.pop();
+                if(entries.size()) entry = entries.front();
+            }
+
+            auto find = node->find_dir(entry);
+
+            if(!find)
+                return nullptr;
+            else {
+                entries.pop();
+                return _traverse_path(entries, find);
+            }
+        }
+    } else
+        return node;
 }
 
 }  // namespace fs
