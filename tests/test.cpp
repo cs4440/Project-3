@@ -1,12 +1,11 @@
 #include <unistd.h>
+#include <cstring>
 #include <iostream>
 #include <map>
 #include <string>
 #include "../include/filesystem.h"
 
 int main() {
-    bool added = false;
-    bool removed = false;
     std::string dir_name, file_name, path;
 
     fs::FileSystem fs;
@@ -54,22 +53,83 @@ int main() {
     fs.change_dir(path);
     std::cout << "current node: " << fs.current()->name() << std::endl;
 
-    path = "..";
-    std::cout << "\nchanging to directory: " << path << std::endl;
-    fs.change_dir(path);
-    std::cout << "current node: " << fs.current()->name() << std::endl;
+    dir_name = "dir10";
+    std::cout << "\nadding dir: " << dir_name << ", at node "
+              << fs.current()->name() << std::endl;
+    fs.add_dir(dir_name);
 
-    path = "dir4";
-    std::cout << "\nchanging to invalid path: " << path << std::endl;
-    if(!fs.change_dir(path))
-        std::cout << "changing path failed at: " << path << std::endl;
-    std::cout << "current node: " << fs.current()->name() << std::endl;
+    // path = "dir10";
+    // std::cout << "\nchanging to directory: " << path << std::endl;
+    // fs.change_dir(path);
+    // std::cout << "current node: " << fs.current()->name() << std::endl;
 
-    std::cout << "\nrinting created, last_accessed, and last_created at root"
-              << std::endl;
-    std::cout << "created: " << fs.root()->created_cstr();
-    std::cout << "last_accessed: " << fs.root()->last_accessed_cstr();
-    std::cout << "last_updated: " << fs.root()->last_updated_cstr();
+    // dir_name = "dir100";
+    // std::cout << "\nadding dir: " << dir_name << ", at node "
+    //           << fs.current()->name() << std::endl;
+    // fs.add_dir(dir_name);
+
+    // path = "dir100";
+    // std::cout << "\nchanging to directory: " << path << std::endl;
+    // fs.change_dir(path);
+    // std::cout << "current node: " << fs.current()->name() << std::endl;
+
+    // path = "..";
+    // std::cout << "\nchanging to directory: " << path << std::endl;
+    // fs.change_dir(path);
+    // std::cout << "current node: " << fs.current()->name() << std::endl;
+
+    // path = "..";
+    // std::cout << "\nchanging to directory: " << path << std::endl;
+    // fs.change_dir(path);
+    // std::cout << "current node: " << fs.current()->name() << std::endl;
+
+    // path = "dir10/dir100";
+    // std::cout << "\nchanging to directory: " << path << std::endl;
+    // fs.change_dir(path);
+    // std::cout << "current node: " << fs.current()->name() << std::endl;
+
+    // path = "/";
+    // std::cout << "\nchanging to directory: " << path << std::endl;
+    // fs.change_dir(path);
+    // std::cout << "current node: " << fs.current()->name() << std::endl;
+
+    // path = "dir1/dir10/";
+    // std::cout << "\nchanging to directory: " << path << std::endl;
+    // fs.change_dir(path);
+    // std::cout << "current node: " << fs.current()->name() << std::endl;
+
+    // path = "dir4";
+    // std::cout << "\nchanging to invalid path: " << path << std::endl;
+    // if(!fs.change_dir(path))
+    //     std::cout << "changing path failed at: " << path << std::endl;
+    // std::cout << "current node: " << fs.current()->name() << std::endl;
+
+    // path = "/dir1/dir10/dir100";
+    // std::cout << "\nchanging to directory: " << path << std::endl;
+    // fs.change_dir(path);
+    // std::cout << "current node: " << fs.current()->name() << std::endl;
+
+    // path = ".";
+    // std::cout << "\nchanging to directory: " << path << std::endl;
+    // fs.change_dir(path);
+    // std::cout << "current node: " << fs.current()->name() << std::endl;
+
+    // path = "../..";
+    // std::cout << "\nchanging to directory: " << path << std::endl;
+    // fs.change_dir(path);
+    // std::cout << "current node: " << fs.current()->name() << std::endl;
+
+    // path = "../dir1/dir10/../../dir2";
+    // std::cout << "\nchanging to directory: " << path << std::endl;
+    // fs.change_dir(path);
+    // std::cout << "current node: " << fs.current()->name() << std::endl;
+
+    // std::cout << "\nprinting created, last_accessed, and last_created at root
+    // "
+    //           << std::endl;
+    // std::cout << "created: " << fs.root()->created_cstr();
+    // std::cout << "last_accessed: " << fs.root()->last_accessed_cstr();
+    // std::cout << "last_updated: " << fs.root()->last_updated_cstr();
 
     return 0;
 }

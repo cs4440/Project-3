@@ -44,6 +44,8 @@ private:
     std::shared_ptr<Directory> _parent;
     std::map<std::string, std::shared_ptr<Directory> > _dirs;
     std::map<std::string, std::shared_ptr<File> > _files;
+
+    void _recursive_remove_dir(std::shared_ptr<Directory> node);
 };
 
 }  // namespace fs

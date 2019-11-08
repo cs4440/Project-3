@@ -1,8 +1,11 @@
 #ifndef FILESYSTEM_H
 #define FILESYSTEM_H
 
+#include <cstring>
+#include <map>
 #include <memory>
 #include <queue>
+#include <string>
 #include "directory.h"
 #include "file.h"
 
@@ -38,7 +41,7 @@ public:
 
     // MUTATORS
     void init();
-    bool change_dir(std::string& path);
+    bool change_dir(std::string path);
 
     std::shared_ptr<Directory> add_dir(std::string n);
     std::shared_ptr<File> add_file(std::string n);
@@ -51,6 +54,7 @@ private:
     std::shared_ptr<Directory> _root;     // never be changed after init
     std::shared_ptr<Directory> _current;  // points to current dir node
 
+    // convert a path string to queue of entry
     std::queue<std::string> _parse_path(std::string path);
 };
 
