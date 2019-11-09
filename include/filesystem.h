@@ -6,6 +6,7 @@
 #include <list>
 #include <map>
 #include <queue>
+#include <stdexcept>
 #include <string>
 #include "directory.h"
 #include "file.h"
@@ -14,6 +15,8 @@ namespace fs {
 
 class FileSystem {
 public:
+    enum { FNAME_MAX = 255 };
+
     FileSystem();
 
     // BIG THREE

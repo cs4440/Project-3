@@ -24,7 +24,14 @@ int main() {
     dir_name = "dir3";
     std::cout << "adding dir: " << dir_name << std::endl;
     fs.add_dir(dir_name);
-
+    try {
+        dir_name = "dir3";
+        std::cout << "adding dir: " << dir_name << std::endl;
+        fs.add_dir(dir_name);
+    } catch(const std::exception &e) {
+        std::cout << "adding dir: " << dir_name << " failed b/c: " << e.what()
+                  << std::endl;
+    }
     file_name = "file1.txt";
     std::cout << "\nadding file: " << file_name << std::endl;
     fs.add_file(file_name);

@@ -113,9 +113,31 @@ bool FileSystem::change_dir(std::string path) {
     return success;
 }
 
-Directory* FileSystem::add_dir(std::string n) { return current()->add_dir(n); }
+Directory* FileSystem::add_dir(std::string n) {
+    if(n.size() > FNAME_MAX)
+        throw std::runtime_error("Name exceeded size limit " + FNAME_MAX);
+    else {
+        Directory* new_dir = current()->add_dir(n);
 
-File* FileSystem::add_file(std::string n) { return current()->add_file(n); }
+        if(new_dir)
+            return new_dir;
+        else
+            throw std::runtime_error("Name already exists");
+    }
+}
+
+File* FileSystem::add_file(std::string n) {
+    if(n.size() > FNAME_MAX)
+        throw std::runtime_error("Name exceeded size limit " + FNAME_MAX);
+    else {
+        File* new_file = current()->add_file(n);
+
+        if(new_file)
+            return new_file;
+        else
+            throw std::runtime_error("Name already exists");
+    }
+}
 
 bool FileSystem::remove_dir(std::string n) { return current()->remove_dir(n); }
 

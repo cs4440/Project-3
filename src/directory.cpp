@@ -51,7 +51,8 @@ Directory* Directory::add_dir(std::string n) {
     auto find = _dirs.find(n);
 
     if(find == _dirs.end()) {
-        _dirs[n] = new Directory(n, this);
+        new_dir = new Directory(n, this);
+        _dirs[n] = new_dir;
         update_last_updated();
     }
 
