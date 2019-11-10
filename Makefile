@@ -11,7 +11,7 @@ TESTDIR         := tests
 TESTS           := test
 SHEL            := state_machine.o token.o tokenizer.o parser.o shell.o
 FS              := entry.o file.o directory.o filesystem.o
-ALL             := myshell basic_client basic_server
+ALL             := myshell basic_client basic_server dir_listing_client dir_listing_server
 
 # $@ targt name
 # $< first prerequisite
@@ -36,6 +36,18 @@ basic_client: basic_client.o
 	$(CXX) -o $@ $^
 
 basic_client.o: $(PROC)/basic_client.cpp
+	$(CXX) $(CXXFLAGS) -c $<
+
+dir_listing_server: dir_listing_server.o
+	$(CXX) -o $@ $^ $(LDFLAGS)
+
+dir_listing_server.o: $(PROC)/dir_listing_server.cpp
+	$(CXX) $(CXXFLAGS) -c $<
+
+dir_listing_client: dir_listing_client.o
+	$(CXX) -o $@ $^
+
+dir_listing_client.o: $(PROC)/dir_listing_client.cpp
 	$(CXX) $(CXXFLAGS) -c $<
 
 # SHELL
