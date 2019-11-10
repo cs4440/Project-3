@@ -40,10 +40,12 @@ int main(void) {
         error("ERROR writing to socket");
     }
     bzero(buf, BUFLEN);
-    while((count = read(sockfd, buf, 1))) {
+    while((count = read(sockfd, buf, BUFLEN - 1))) {
         if(count < 0) {
             error("ERROR reading from socket");
         }
+
+        buf[count] = '\0';
         printf("%s", buf);
     }
 
