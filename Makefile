@@ -27,7 +27,7 @@ myshell.o: $(PROC)/myshell.cpp
 	$(CXX) $(CXXFLAGS) -c $<
 
 basic_server: basic_server.o
-	$(CXX) -o $@ $^
+	$(CXX) -o $@ $^ $(LDFLAGS)
 
 basic_server.o: $(PROC)/basic_server.cpp
 	$(CXX) $(CXXFLAGS) -c $<
