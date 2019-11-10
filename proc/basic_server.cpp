@@ -30,7 +30,7 @@ void *connection_handler(void *socket_desc) {
     for(i = len - 1; i >= 0; i--) {
         revbuf[j++] = buf[i];
     }
-    revbuf[i] = '\0';
+    revbuf[j] = '\0';
 
     if(write(sockfd, revbuf, strlen(revbuf)) < 0) {
         error("ERROR writing to socket\n");
