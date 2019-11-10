@@ -14,7 +14,7 @@ void error(const char *msg) {
 }
 
 int main(void) {
-    int sockfd = 0;
+    int sockfd = 0, count = -1;
     struct sockaddr_in serv_addr;
     char buf[BUFLEN] = {0};
 
@@ -40,10 +40,12 @@ int main(void) {
         error("ERROR writing to socket");
     }
     bzero(buf, BUFLEN);
-    if(read(sockfd, buf, BUFLEN) < 0) {
-        error("ERROR reading from socket");
+    while((count = read(sockfd, buf, 1))) {
+        if(count < 0) {
+            error("ERROR reading from socket");
+        }
+        printf("%s", buf);
     }
-    printf("%s", buf);
 
     return EXIT_SUCCESS;
 }
