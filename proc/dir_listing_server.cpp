@@ -29,6 +29,7 @@ void connection_handler(int sockfd) {
         args[pos++] = token;
         token = strtok(NULL, " ");
     }
+    args[pos] = NULL;
 
     dup2(sockfd, STDOUT_FILENO);
 

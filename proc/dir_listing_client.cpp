@@ -19,7 +19,7 @@ int main(void) {
     char buf[BUFLEN] = {0};
 
     printf("Enter arguments for ls command:\n");
-    scanf("%s", buf);
+    scanf("%[^\n]", buf);
 
     if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         error("ERROR opening socket\n");
