@@ -36,7 +36,7 @@ void *connection_handler(void *socket_desc) {
         error("ERROR writing to socket\n");
     }
 
-    free(socket_desc);
+    delete(int *)socket_desc;
 
     return 0;
 }
@@ -72,7 +72,7 @@ int main(void) {
     while((newsockfd = accept(sockfd, (struct sockaddr *)&cli_addr,
                               (socklen_t *)&addrlen))) {
         pthread_t sniffer_thread;
-        thsockfd = (int *)malloc(1);
+        thsockfd = new int;
         *thsockfd = newsockfd;
 
         if(newsockfd < 0) {
