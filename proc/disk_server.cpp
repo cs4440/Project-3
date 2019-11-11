@@ -1,4 +1,5 @@
 #include <pthread.h>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include "../include/socket.h"
@@ -39,15 +40,24 @@ void *connection_handler(void *socketfd) {
     return 0;
 }
 
-int main() {
+int main(int argc, char *argv[]) {
     int port = 8000;
-    sock::Server server(port);
+    sock::Server server;
     int newsockfd, *thsockfd = nullptr;
     pthread_t tid;
+    pthread_attr_t attr;
+
+    if(argc > 1) port = atoi(argv[1]);
 
     try {
+        server.set_port(port);
         server.start();
+        std::cout << "Server started on port " << port << std::endl;
 
+        // set pthread attributes to detach
+        pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
+        // listen to incoming connections
         while((newsockfd = server.accept_connection()) > -1) {
             thsockfd = new int;
             *thsockfd = newsockfd;

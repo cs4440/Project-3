@@ -46,7 +46,7 @@ private:
 
 class Client : public Socket {
 public:
-    Client(std::string host);
+    Client(std::string host = "localhost", int port = PORT);
 
     void start();
     void stop();

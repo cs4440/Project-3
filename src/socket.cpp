@@ -62,7 +62,7 @@ int Server::accept_connection() {
     return _newsockfd;
 }
 
-Client::Client(std::string host) : Socket(), _host(host) {}
+Client::Client(std::string host, int port) : Socket(port), _host(host) {}
 
 void Client::start() {
     // set server address options

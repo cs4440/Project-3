@@ -1,20 +1,27 @@
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include "../include/socket.h"
 
 #define BUFLEN 1024
 
-int main() {
+int main(int argc, char* argv[]) {
     bool exit = false;
     char msg_len[4] = {0}, buf[BUFLEN] = {0};
-    sock::Client client1("127.0.0.1");
-    int sockfd, bytes, msg_size = 0;
-    std::string line;
+    sock::Client client;
+    int port = 8000, sockfd, bytes, msg_size = 0;
+    std::string host = "localhost", line;
+
+    if(argc > 1) host = argv[1];
+    if(argc > 2) port = atoi(argv[2]);
 
     try {
-        client1.start();
+        client.set_host(host);
+        client.set_port(port);
+        client.start();
+        std::cout << "Client started on host " << host << ":" << port << std::endl;
 
-        sockfd = client1.sockfd();
+        sockfd = client.sockfd();
 
         while(!exit) {
             std::cout << "> ";
@@ -31,11 +38,11 @@ int main() {
             if(strncmp(line.c_str(), "exit", 4) == 0) exit = true;
         }
 
-    } catch(const std::exception &e) {
-        std::cerr << "Client fail: " << e.what() << std::endl;
+    } catch(const std::exception& e) {
+        std::cerr << "Client fail on host " << host << ":" << port << ", " << e.what() << std::endl;;
     }
 
-    client1.stop();
+    client.stop();
 
     return 0;
 }
