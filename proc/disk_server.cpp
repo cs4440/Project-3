@@ -8,16 +8,17 @@
 void *connection_handler(void *socketfd) {
     bool exit = false;
     int sockfd = *(int *)socketfd;
-    char msg_size[4] = {0}, buf[BUFLEN] = {0};
-    int msg_len = 0, bytes = 0, totalbytes = 0;
+    char msg_len[4] = {0}, buf[BUFLEN] = {0};
+    int msg_size = 0, bytes = 0, totalbytes = 0;
 
     std::cout << "Serving client" << std::endl;
 
     // read first 4 bytes to determine messge size
-    while(!exit && (bytes = read(sockfd, msg_size, 4)) > 0) {
-        sock::char_to_int(msg_size, msg_len);
+    while(!exit && (bytes = read(sockfd, msg_len, 4)) > 0) {
+        sock::char_to_int(msg_len, msg_size);  // convert 4 byte char to int
 
-        while(!exit && totalbytes < msg_len) {
+        // keep reading from socket until msg_sze is reached
+        while(!exit && totalbytes < msg_size) {
             bytes = read(sockfd, buf, BUFLEN - 1);
             buf[bytes] = '\0';
 
@@ -29,7 +30,6 @@ void *connection_handler(void *socketfd) {
         }
         bytes = 0;
         totalbytes = 0;
-        memset(msg_size, 0, 4);
     }
 
     std::cout << "Client called exit" << std::endl;

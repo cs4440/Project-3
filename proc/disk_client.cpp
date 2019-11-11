@@ -6,9 +6,9 @@
 
 int main() {
     bool exit = false;
-    char msg_size[4] = {0}, buf[BUFLEN] = {0};
+    char msg_len[4] = {0}, buf[BUFLEN] = {0};
     sock::Client client1("127.0.0.1");
-    int sockfd, bytes, msg_len = 0;
+    int sockfd, bytes, msg_size = 0;
     std::string line;
 
     try {
@@ -16,12 +16,14 @@ int main() {
 
         sockfd = client1.sockfd();
 
-        while(!exit && std::getline(std::cin, line)) {
+        while(!exit) {
+            std::cout << "> ";
+            std::getline(std::cin, line);
+
             // get line size and send to server the message length
-            msg_len = line.size();
-            memset(msg_size, 0, 4);
-            sock::int_to_char(msg_len, msg_size);
-            write(sockfd, msg_size, 4);
+            msg_size = line.size();
+            sock::int_to_char(msg_size, msg_len);  // convert to 4 byte char
+            write(sockfd, msg_len, 4);
 
             // send to server the actual message
             write(sockfd, line.c_str(), line.size());

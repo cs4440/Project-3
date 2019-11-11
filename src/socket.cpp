@@ -65,6 +65,7 @@ int Server::accept_connection() {
 Client::Client(std::string host) : Socket(), _host(host) {}
 
 void Client::start() {
+    // set server address options
     _serv_addr.sin_family = AF_INET;
     _serv_addr.sin_port = htons(_port);
 
