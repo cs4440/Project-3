@@ -11,7 +11,10 @@ TESTDIR         := tests
 TESTS           := test
 SHEL            := state_machine.o token.o tokenizer.o parser.o shell.o
 FS              := entry.o file.o directory.o filesystem.o
-ALL             := myshell basic_client basic_server dir_listing_client dir_listing_server
+SOCKET          := socket.o
+ALL             := basic_client basic_server\
+                   dir_listing_client dir_listing_server\
+                   disk_server disk_client
 
 # $@ targt name
 # $< first prerequisite
@@ -48,6 +51,23 @@ dir_listing_client: dir_listing_client.o
 	$(CXX) -o $@ $^
 
 dir_listing_client.o: $(PROC)/dir_listing_client.cpp
+	$(CXX) $(CXXFLAGS) -c $<
+
+# SERVER
+socket.o: ${SRC}/socket.cpp\
+	${INC}/socket.h
+	$(CXX) $(CXXFLAGS) -c $<
+
+disk_server: disk_server.o socket.o
+	$(CXX) -o $@ $^ $(LDFLAGS)
+
+disk_server.o: $(PROC)/disk_server.cpp
+	$(CXX) $(CXXFLAGS) -c $<
+
+disk_client: disk_client.o socket.o
+	$(CXX) -o $@ $^ $(LDFLAGS)
+
+disk_client.o: $(PROC)/disk_client.cpp
 	$(CXX) $(CXXFLAGS) -c $<
 
 # SHELL
