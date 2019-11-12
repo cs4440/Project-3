@@ -58,9 +58,16 @@ void *connection_handler(void *socketfd) {
     fs::Disk disk(diskfile);
 
     // static messages
-    std::string welcome = "Welcome to server.\n";
+    std::string welcome =
+        "Welcome to server.\n\n"
+        "Available commands are:\n"
+        "[C]reate - Create/initialize disk. 'C [CYL] [SEC]'\n"
+        "[D]elete - Delete current disk\n"
+        "[I]nfo - Get disk geometry information\n"
+        "[R]ead - Read from disk. 'R [CYL] [SEC]'\n"
+        "[W]rite - Write to disk. 'W [CYL] [SEC] [DATA]'\n\n";
     std::string need_create =
-        "Please initialize disk with CREATE command: 'C [CYLINDERS] [SECTORS]'";
+        "Please initialize disk with CREATE command: 'C [CYL] [SEC]'";
     std::string disk_exists =
         "ERROR disk already exists. Reusing existing disk";
 
@@ -79,10 +86,10 @@ void *connection_handler(void *socketfd) {
             "ERROR. Initializating existing disk: " + std::string(e.what());
     }
 
-    // Send welcome message to client
-    sock::send_msg(sockfd, welcome);
-
     try {
+        // Send welcome message to client
+        sock::send_msg(sockfd, welcome);
+
         // read message from client
         // read first 4 bytes to determine message size
         while(!exit) {

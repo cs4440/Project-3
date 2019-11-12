@@ -10,7 +10,7 @@
 #include <cstring>      // strncpy()
 #include <stdexcept>    // std::exception
 #include <string>       // std::string
-#include "utils.h"      // int_to_char(), char_to_int()
+#include "utils.h"      // char_to_int(), int_to_char()
 
 namespace fs {
 

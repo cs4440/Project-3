@@ -8,7 +8,7 @@
 #include <cstring>       // memset
 #include <stdexcept>     // std::exception
 #include <string>        // std::string
-#include "utils.h"
+#include "utils.h"       // char_to_int(), int_to_char()
 
 namespace sock {
 

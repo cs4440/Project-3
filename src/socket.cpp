@@ -94,10 +94,11 @@ void send_msg(int sockfd, const std::string &msg) {
     // get msg size and send message length
     msg_size = msg.size();                  // get size
     utils::int_to_char(msg_size, msg_len);  // convert to 4 byte char
-    write(sockfd, msg_len, 4);              // send message length
+    if(write(sockfd, msg_len, 4) < 0) throw std::runtime_error("Disconnected");
 
     // send message through socket
-    write(sockfd, msg.c_str(), msg.size());
+    if(write(sockfd, msg.c_str(), msg.size()) < 0)
+        throw std::runtime_error("Disconnected");
 }
 
 void send_msg(int sockfd, char *msg, std::size_t sz) {
@@ -105,10 +106,10 @@ void send_msg(int sockfd, char *msg, std::size_t sz) {
 
     // get msg size and send message length
     utils::int_to_char(sz, msg_len);  // convert to 4 byte char
-    write(sockfd, msg_len, 4);        // send message length
+    if(write(sockfd, msg_len, 4) < 0) throw std::runtime_error("Disconnected");
 
     // send message through socket
-    write(sockfd, msg, sz);
+    if(write(sockfd, msg, sz) < 0) throw std::runtime_error("Disconnected");
 }
 
 // read from socket and return by ref to msg
