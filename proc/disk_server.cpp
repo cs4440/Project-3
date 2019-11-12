@@ -82,119 +82,121 @@ void *connection_handler(void *socketfd) {
     // Send welcome message to client
     sock::send_msg(sockfd, welcome);
 
-    // read message from client
-    // read first 4 bytes to determine message size
-    while(!exit) {
-        sock::read_msg(sockfd, client_msg);
-        std::cout << client_msg << std::endl;
+    try {
+        // read message from client
+        // read first 4 bytes to determine message size
+        while(!exit) {
+            sock::read_msg(sockfd, client_msg);
+            std::cout << client_msg << std::endl;
 
-        if(client_msg.size()) {
-            // tokenize/parse client message into vector of string arguments
-            parser.clear();
-            parser.set_string(client_msg.c_str());
-            parser.parse();
-            tokens = parser.get_tokens();
+            if(client_msg.size()) {
+                // tokenize/parse client message into arguments
+                parser.clear();
+                parser.set_string(client_msg.c_str());
+                parser.parse();
+                tokens = parser.get_tokens();
 
-            // Exit
-            if(tokens[0] == "exit") {
-                sock::send_msg(sockfd, "Closing client");
-                break;
-            }
-            // Create disk
-            else if(tokens[0] == "C") {
-                int is_created = false;
-                if(tokens.size() < 3)
-                    sock::send_msg(sockfd,
-                                   "ERROR. Insufficient arguments for C.");
-                else {
-                    int cyl = std::stoi(tokens[1].string());
-                    int sec = std::stoi(tokens[2].string());
-                    disk.set_cylinders(cyl);
-                    disk.set_sectors(sec);
+                // Exit
+                if(tokens[0] == "exit") {
+                    sock::send_msg(sockfd, "Closing client");
+                    break;
+                }
+                // Create disk
+                else if(tokens[0] == "C") {
+                    int is_created = false;
+                    if(tokens.size() < 3)
+                        sock::send_msg(sockfd,
+                                       "ERROR. Insufficient arguments for C.");
+                    else {
+                        int cyl = std::stoi(tokens[1].string());
+                        int sec = std::stoi(tokens[2].string());
+                        disk.set_cylinders(cyl);
+                        disk.set_sectors(sec);
 
-                    try {
-                        is_created = disk.create();
+                        try {
+                            is_created = disk.create();
 
-                        if(is_created)
-                            sock::send_msg(sockfd, "Disk created with " +
-                                                       std::to_string(cyl) +
-                                                       " " +
-                                                       std::to_string(sec));
-                        else {
-                            sock::send_msg(sockfd, "ERROR. Disk exists.");
+                            if(is_created)
+                                sock::send_msg(sockfd, "Disk created.");
+                            else {
+                                sock::send_msg(sockfd, "ERROR. Disk exists.");
+                            }
+                        } catch(const std::exception &e) {
+                            sock::send_msg(sockfd, e.what());
                         }
-                    } catch(const std::exception &e) {
-                        sock::send_msg(sockfd, e.what());
                     }
                 }
-            }
-            // Remove disk
-            else if(tokens[0] == "D") {
-                int is_removed = false;
-                is_removed = disk.remove_disk();
+                // Remove disk
+                else if(tokens[0] == "D") {
+                    int is_removed = false;
+                    is_removed = disk.remove_disk();
 
-                if(is_removed)
-                    sock::send_msg(sockfd, "1");
-                else
-                    sock::send_msg(sockfd, "0");
-            }
-            // Get geometry information
-            else if(tokens[0] == "I") {
-                if(disk.valid())
-                    sock::send_msg(sockfd, disk.geometry());
-                else
-                    sock::send_msg(sockfd, "ERROR. No disk.\n" + need_create);
-            }
-            // Read disk
-            else if(tokens[0] == "R") {
-                if(tokens.size() < 3)
-                    sock::send_msg(sockfd,
-                                   "ERROR. Insufficient arguments for R");
-                else {
-                    if(disk.valid()) {
-                        int cyl = std::stoi(tokens[1].string());
-                        int sec = std::stoi(tokens[2].string());
-
-                        std::string data = disk.read_at(cyl, sec);
-                        sock::send_msg(sockfd, data);
-
-                    } else
+                    if(is_removed)
+                        sock::send_msg(sockfd, "1");
+                    else
+                        sock::send_msg(sockfd, "0");
+                }
+                // Get geometry information
+                else if(tokens[0] == "I") {
+                    if(disk.valid())
+                        sock::send_msg(sockfd, disk.geometry());
+                    else
                         sock::send_msg(sockfd,
                                        "ERROR. No disk.\n" + need_create);
                 }
-            }
-            // Write disk
-            else if(tokens[0] == "W") {
-                if(tokens.size() < 4)
-                    sock::send_msg(sockfd,
-                                   "ERROR. Insufficient arguments for W");
-                else {
-                    if(disk.valid()) {
-                        bool success = false;
-                        int cyl = std::stoi(tokens[1].string());
-                        int sec = std::stoi(tokens[2].string());
-
-                        success = disk.write_at(tokens[3].string().c_str(), cyl,
-                                                sec, tokens[3].string().size());
-
-                        if(success)
-                            sock::send_msg(sockfd, "1");
-                        else
-                            sock::send_msg(sockfd, "0");
-                    } else
+                // Read disk
+                else if(tokens[0] == "R") {
+                    if(tokens.size() < 3)
                         sock::send_msg(sockfd,
-                                       "ERROR. No disk.\n" + need_create);
+                                       "ERROR. Insufficient arguments for R");
+                    else {
+                        if(disk.valid()) {
+                            int cyl = std::stoi(tokens[1].string());
+                            int sec = std::stoi(tokens[2].string());
+
+                            std::string data = disk.read_at(cyl, sec);
+                            sock::send_msg(sockfd, data);
+
+                        } else
+                            sock::send_msg(sockfd,
+                                           "ERROR. No disk.\n" + need_create);
+                    }
                 }
-            }
-            // Unknown commands
-            else {
+                // Write disk
+                else if(tokens[0] == "W") {
+                    if(tokens.size() < 4)
+                        sock::send_msg(sockfd,
+                                       "ERROR. Insufficient arguments for W");
+                    else {
+                        if(disk.valid()) {
+                            bool success = false;
+                            int cyl = std::stoi(tokens[1].string());
+                            int sec = std::stoi(tokens[2].string());
+
+                            success =
+                                disk.write_at(tokens[3].string().c_str(), cyl,
+                                              sec, tokens[3].string().size());
+
+                            if(success)
+                                sock::send_msg(sockfd, "1");
+                            else
+                                sock::send_msg(sockfd, "0");
+                        } else
+                            sock::send_msg(sockfd,
+                                           "ERROR. No disk.\n" + need_create);
+                    }
+                }
+                // Unknown commands
+                else {
+                    sock::send_msg(sockfd, "Unknown command");
+                }
+            } else
                 sock::send_msg(sockfd, "Unknown command");
-            }
-        } else
-            sock::send_msg(sockfd, "Unknown command");
+        }
+        std::cout << "Client called exit" << std::endl;
+    } catch(const std::exception &e) {
+        std::cout << "Client error. " << e.what() << std::endl;
     }
-
-    std::cout << "Client called exit" << std::endl;
 
     delete(int *)socketfd;
 

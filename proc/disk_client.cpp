@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
         }
 
     } catch(const std::exception& e) {
-        std::cerr << "Client fail on host " << host << ":" << port << ", "
+        std::cerr << "Client error on host " << host << ":" << port << ". "
                   << e.what() << std::endl;
         ;
     }

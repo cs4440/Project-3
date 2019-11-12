@@ -129,11 +129,13 @@ void read_msg(int sockfd, std::string &msg) {
                 msg += buf;
 
                 totalbytes += bytes;
-            }
+            } else
+                throw std::runtime_error("Disconnected");
         }
         bytes = 0;
         totalbytes = 0;
-    }
+    } else
+        throw std::runtime_error("Disconnected");
 }
 
 }  // namespace sock
