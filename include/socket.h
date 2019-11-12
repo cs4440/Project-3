@@ -1,17 +1,18 @@
-#ifndef SERVER_H
-#define SERVER_H
+#ifndef SOCKET_H
+#define SOCKET_H
 
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <unistd.h>
-#include <cstring>
-#include <stdexcept>
-#include <string>
+#include <arpa/inet.h>   // htons()
+#include <netinet/in.h>  // struct sockaddr_in
+#include <sys/socket.h>  // socket()
+#include <unistd.h>      // close()
+#include <cstring>       // memset
+#include <stdexcept>     // std::exception
+#include <string>        // std::string
+#include "utils.h"
 
 namespace sock {
 
-enum { PORT = 8000 };
+enum { PORT = 8000, BUFLEN = 1024 };
 
 class Socket {
 public:
@@ -21,8 +22,8 @@ public:
     int sockfd();  // get sockfd
     int port();    // get port
 
-    void close_socket();  // close connection
-    void set_port(int port);
+    void close_socket();      // close connection
+    void set_port(int port);  // set port
 
 protected:
     struct sockaddr_in _serv_addr;
@@ -57,9 +58,10 @@ private:
 };
 
 // HELPER FUNCTIONS
-void int_to_char(int n, char *str);   // convert int to char[4]
-void char_to_int(char *str, int &n);  // convert char[4] to int
+void send_msg(int sockfd, const std::string &msg);     // send through socket
+void send_msg(int sockfd, char *msg, std::size_t sz);  // send through socket
+void read_msg(int sockfd, std::string &msg);           // read from socket
 
 }  // namespace sock
 
-#endif  // SERVER_H
+#endif  // SOCKET_H

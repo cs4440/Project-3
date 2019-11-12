@@ -7,10 +7,9 @@
 
 int main(int argc, char* argv[]) {
     bool exit = false;
-    char msg_len[4] = {0}, buf[BUFLEN] = {0};
     sock::Client client;
-    int port = 8000, sockfd, bytes, msg_size = 0;
-    std::string host = "localhost", line;
+    int port = 8000, sockfd;
+    std::string host = "localhost", line, server_msg;
 
     if(argc > 1) host = argv[1];
     if(argc > 2) port = atoi(argv[2]);
@@ -19,27 +18,30 @@ int main(int argc, char* argv[]) {
         client.set_host(host);
         client.set_port(port);
         client.start();
-        std::cout << "Client started on host " << host << ":" << port << std::endl;
+        std::cout << "Client started on host " << host << ":" << port
+                  << std::endl;
 
         sockfd = client.sockfd();
+
+        // read server welcome message
+        sock::read_msg(sockfd, server_msg);
+        std::cout << server_msg << std::endl;
 
         while(!exit) {
             std::cout << "> ";
             std::getline(std::cin, line);
 
-            // get line size and send to server the message length
-            msg_size = line.size();
-            sock::int_to_char(msg_size, msg_len);  // convert to 4 byte char
-            write(sockfd, msg_len, 4);
+            sock::send_msg(sockfd, line);
+            sock::read_msg(sockfd, server_msg);
+            std::cout << server_msg << std::endl;
 
-            // send to server the actual message
-            write(sockfd, line.c_str(), line.size());
-
-            if(strncmp(line.c_str(), "exit", 4) == 0) exit = true;
+            if(line == "exit") break;
         }
 
     } catch(const std::exception& e) {
-        std::cerr << "Client fail on host " << host << ":" << port << ", " << e.what() << std::endl;;
+        std::cerr << "Client fail on host " << host << ":" << port << ", "
+                  << e.what() << std::endl;
+        ;
     }
 
     client.stop();

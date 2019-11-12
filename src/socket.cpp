@@ -1,5 +1,4 @@
 #include "../include/socket.h"
-#include <iostream>
 
 namespace sock {
 
@@ -86,16 +85,55 @@ void Client::stop() { close_socket(); }
 void Client::set_host(std::string host) { _host = host; }
 
 // HELPER FUNCTIONS
-void int_to_char(int n, char *str) {
-    str[0] = n >> 24 & 0xFF;
-    str[1] = n >> 16 & 0xFF;
-    str[2] = n >> 8 & 0xFF;
-    str[3] = n & 0xFF;
+
+// send msg to socket
+void send_msg(int sockfd, const std::string &msg) {
+    char msg_len[4] = {0};
+    int msg_size = 0;
+
+    // get msg size and send message length
+    msg_size = msg.size();                  // get size
+    utils::int_to_char(msg_size, msg_len);  // convert to 4 byte char
+    write(sockfd, msg_len, 4);              // send message length
+
+    // send message through socket
+    write(sockfd, msg.c_str(), msg.size());
 }
 
-void char_to_int(char *str, int &n) {
-    n = ((unsigned char)str[0] << 24) | ((unsigned char)str[1] << 16) |
-        ((unsigned char)str[2] << 8) | (unsigned char)str[3];
+void send_msg(int sockfd, char *msg, std::size_t sz) {
+    char msg_len[4] = {0};
+
+    // get msg size and send message length
+    utils::int_to_char(sz, msg_len);  // convert to 4 byte char
+    write(sockfd, msg_len, 4);        // send message length
+
+    // send message through socket
+    write(sockfd, msg, sz);
+}
+
+// read from socket and return by ref to msg
+void read_msg(int sockfd, std::string &msg) {
+    char msg_len[4] = {0}, buf[BUFLEN] = {0};
+    int msg_size = 0, bytes = 0, totalbytes = 0;
+    msg.clear();
+
+    bytes = read(sockfd, msg_len, 4);  // read message size
+    if(bytes) {
+        utils::char_to_int(msg_len, msg_size);  // convert 4 byte char to int
+
+        // keep reading from socket until msg_sze is reached
+        while(totalbytes < msg_size) {
+            bytes = read(sockfd, buf, BUFLEN - 1);
+            if(bytes) {
+                buf[bytes] = '\0';
+                msg += buf;
+
+                totalbytes += bytes;
+            }
+        }
+        bytes = 0;
+        totalbytes = 0;
+    }
 }
 
 }  // namespace sock

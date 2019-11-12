@@ -9,9 +9,10 @@ SRC             := src
 PROC            := proc
 TESTDIR         := tests
 TESTS           := test
-SHEL            := state_machine.o token.o tokenizer.o parser.o shell.o
-FS              := entry.o file.o directory.o filesystem.o
-SOCKET          := socket.o
+UTILS           := utils.o
+PARSER          := state_machine.o token.o tokenizer.o parser.o
+FS              := entry.o file.o directory.o filesystem.o disk.o $(UTILS)
+SOCKET          := socket.o $(UTILS)
 ALL             := basic_client basic_server\
                    dir_listing_client dir_listing_server\
                    disk_server disk_client
@@ -22,12 +23,6 @@ ALL             := basic_client basic_server\
 
 all: $(ALL)
 #	rm *.o
-
-myshell: myshell.o $(SHEL)
-	$(CXX) -o $@ $^
-
-myshell.o: $(PROC)/myshell.cpp
-	$(CXX) $(CXXFLAGS) -c $<
 
 basic_server: basic_server.o
 	$(CXX) -o $@ $^ $(LDFLAGS)
@@ -53,24 +48,31 @@ dir_listing_client: dir_listing_client.o
 dir_listing_client.o: $(PROC)/dir_listing_client.cpp
 	$(CXX) $(CXXFLAGS) -c $<
 
-# SERVER
-socket.o: ${SRC}/socket.cpp\
-	${INC}/socket.h
-	$(CXX) $(CXXFLAGS) -c $<
+# DISK SERVER
 
-disk_server: disk_server.o socket.o
+disk_server: disk_server.o $(SOCKET) $(FS) $(PARSER) 
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 disk_server.o: $(PROC)/disk_server.cpp
 	$(CXX) $(CXXFLAGS) -c $<
 
-disk_client: disk_client.o socket.o
+disk_client: disk_client.o $(SOCKET)
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 disk_client.o: $(PROC)/disk_client.cpp
 	$(CXX) $(CXXFLAGS) -c $<
 
-# SHELL
+# UTILS
+utils.o: ${SRC}/utils.cpp\
+	${INC}/utils.h
+	$(CXX) $(CXXFLAGS) -c $<
+
+# SOCKET
+socket.o: ${SRC}/socket.cpp\
+	${INC}/socket.h
+	$(CXX) $(CXXFLAGS) -c $<
+
+# PARSER
 state_machine.o: ${SRC}/state_machine.cpp\
 	${INC}/state_machine.h
 	$(CXX) $(CXXFLAGS) -c $<
@@ -87,11 +89,10 @@ parser.o: ${SRC}/parser.cpp\
 	${INC}/parser.h
 	$(CXX) $(CXXFLAGS) -c $<
 
-shell.o: ${SRC}/shell.cpp\
-	${INC}/shell.h
-	$(CXX) $(CXXFLAGS) -c $<
-
 # FILE SYSTEM
+disk.o: ${SRC}/disk.cpp\
+	${INC}/disk.h
+	$(CXX) $(CXXFLAGS) -c $<
 
 entry.o: ${SRC}/entry.cpp\
 	${INC}/entry.h

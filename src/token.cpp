@@ -219,6 +219,24 @@ bool operator==(const Token& lhs, const Token& rhs) {
 
 /*******************************************************************************
  * DESCRIPTION:
+ *  Equality comparison
+ *
+ * PRE-CONDITIONS:
+ *  const Token lhs: left tok
+ *  const Token rhs: right tok
+ *
+ * POST-CONDITIONS:
+ *  none
+ *
+ * RETURN:
+ *  bool
+ ******************************************************************************/
+bool operator==(const Token& lhs, const std::string& rhs) {
+    return lhs._token == rhs;
+}
+
+/*******************************************************************************
+ * DESCRIPTION:
  *  Inequality comparison
  *
  * PRE-CONDITIONS:
@@ -233,6 +251,24 @@ bool operator==(const Token& lhs, const Token& rhs) {
  ******************************************************************************/
 bool operator!=(const Token& lhs, const Token& rhs) {
     return lhs._type != rhs._type;
+}
+
+/*******************************************************************************
+ * DESCRIPTION:
+ *  Inequality comparison
+ *
+ * PRE-CONDITIONS:
+ *  const Token lhs: left tok
+ *  const Token rhs: right tok
+ *
+ * POST-CONDITIONS:
+ *  none
+ *
+ * RETURN:
+ *  bool
+ ******************************************************************************/
+bool operator!=(const Token& lhs, const std::string& rhs) {
+    return lhs._token != rhs;
 }
 
 /*******************************************************************************
