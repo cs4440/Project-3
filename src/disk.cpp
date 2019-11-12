@@ -13,8 +13,8 @@ Disk::Disk(std::string name, std::size_t cyl, std::size_t sec)
       _file(nullptr) {}
 
 Disk::~Disk() {
-    _close_fd();    // close file descriptor
     _unmap_file();  // unmap virtual memory from file
+    _close_fd();    // close file descriptor
 }
 
 std::size_t Disk::cylinder() { return _cylinders; }
@@ -124,8 +124,8 @@ bool Disk::open_disk(std::string n) {
 bool Disk::remove_disk() {
     bool is_removed = false;
 
-    _close_fd();    // close file descriptor
     _unmap_file();  // unmap virtual memory from file
+    _close_fd();    // close file descriptor
     if(remove(_name.c_str()) == 0) is_removed = true;  // remove sysmte file
 
     return is_removed;
