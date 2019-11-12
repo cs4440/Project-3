@@ -55,6 +55,9 @@ private:
     int _fd;            // file decriptor to physical file
     char* _file;        // memory pointer to file
     char* _ofile;       // original file without offset
+
+    void _close_fd();    // close file descriptor
+    void _unmap_file();  // unmap virtual memory from file
 };
 
 }  // namespace fs

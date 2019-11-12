@@ -14,7 +14,8 @@ Disk::Disk(std::string name, std::size_t cyl, std::size_t sec)
       _file(nullptr) {}
 
 Disk::~Disk() {
-    if(_fd > -1) close(_fd);
+    _close_fd();    // close file descriptor
+    _unmap_file();  // unmap virtual memory from file
 }
 
 std::size_t Disk::cylinder() { return _cylinders; }
@@ -124,18 +125,9 @@ bool Disk::open_disk(std::string n) {
 bool Disk::remove_disk() {
     bool is_removed = false;
 
-    // close file descriptor if valid
-    if(_fd > -1) {
-        close(_fd);
-        _fd = -1;
-    }
-
-    if(_ofile) {
-        munmap(_ofile, _totalbytes);
-        _ofile = _file = nullptr;
-    }
-
-    if(remove(_name.c_str()) == 0) is_removed = true;
+    _close_fd();    // close file descriptor
+    _unmap_file();  // unmap virtual memory from file
+    if(remove(_name.c_str()) == 0) is_removed = true;  // remove sysmte file
 
     return is_removed;
 }
@@ -168,6 +160,20 @@ bool Disk::write_at(char *buf, std::size_t cyl, std::size_t sec,
     else {
         strncpy(_file + (cyl * sec), buf, bufsz);
         return true;
+    }
+}
+
+void Disk::_close_fd() {
+    if(_fd > -1) {
+        close(_fd);
+        _fd = -1;
+    }
+}
+
+void Disk::_unmap_file() {
+    if(_ofile) {
+        munmap(_ofile, _totalbytes);
+        _ofile = _file = nullptr;
     }
 }
 
