@@ -58,9 +58,9 @@ private:
 };
 
 // HELPER FUNCTIONS
-void send_msg(int sockfd, const std::string &msg);     // send through socket
-void send_msg(int sockfd, char *msg, std::size_t sz);  // send through socket
-void read_msg(int sockfd, std::string &msg);           // read from socket
+void send_msg(int sockfd, const std::string &msg);     // send msg -> socket
+void send_msg(int sockfd, char *msg, std::size_t sz);  // send msg -> socket
+void read_msg(int sockfd, std::string &msg);           // read <- socket
 
 }  // namespace sock
 

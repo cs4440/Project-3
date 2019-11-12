@@ -1,5 +1,4 @@
 #include "../include/disk.h"
-#include <iostream>
 
 namespace fs {
 

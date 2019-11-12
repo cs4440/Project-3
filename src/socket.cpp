@@ -118,11 +118,11 @@ void read_msg(int sockfd, std::string &msg) {
     msg.clear();
 
     bytes = read(sockfd, msg_len, 4);  // read message size
-    if(bytes) {
+    if(bytes > 0) {
         utils::char_to_int(msg_len, msg_size);  // convert 4 byte char to int
 
         // keep reading from socket until msg_sze is reached
-        while(totalbytes < msg_size) {
+        while(bytes > 0 && totalbytes < msg_size) {
             bytes = read(sockfd, buf, BUFLEN - 1);
             if(bytes) {
                 buf[bytes] = '\0';

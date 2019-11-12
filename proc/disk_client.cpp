@@ -31,11 +31,13 @@ int main(int argc, char* argv[]) {
             std::cout << "> ";
             std::getline(std::cin, line);
 
-            sock::send_msg(sockfd, line);
-            sock::read_msg(sockfd, server_msg);
-            std::cout << server_msg << std::endl;
+            if(line.size()) {
+                sock::send_msg(sockfd, line);
+                sock::read_msg(sockfd, server_msg);
+                std::cout << server_msg << std::endl;
 
-            if(line == "exit") break;
+                if(line == "exit") break;
+            }
         }
 
     } catch(const std::exception& e) {
