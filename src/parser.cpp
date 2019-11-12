@@ -14,7 +14,7 @@ Parser::Parser(char* buf, std::size_t buf_size)
 }
 
 // returns tokens list
-const std::vector<Token>& Parser::get_tokens() const { return _tokens; }
+const std::vector<std::string>& Parser::get_tokens() const { return _tokens; }
 
 // clear all private states
 void Parser::clear() {
@@ -32,7 +32,8 @@ bool Parser::parse() {
 
     bool get_newline = false;
     int state = START;
-    Token concat, token;
+    std::string concat;
+    Token token;
 
     while(_tokenizer >> token) {
         state = _table[state][token.type()];
@@ -42,7 +43,7 @@ bool Parser::parse() {
             concat.clear();
         } else if(state == PUSH_BOTH) {
             if(!concat.empty()) _tokens.emplace_back(concat);
-            _tokens.emplace_back(token);
+            _tokens.emplace_back(token.string());
             concat.clear();
         } else if(state == CONCAT) {
             concat += token;

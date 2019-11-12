@@ -46,7 +46,11 @@ public:
     friend bool operator!=(const Token& lhs, const Token& rhs);
     friend bool operator!=(const Token& lhs, const std::string& rhs);
     friend Token& operator+=(Token& lhs, const Token& rhs);
+    friend Token& operator+=(Token& lhs, const std::string& rhs);
+    friend std::string& operator+=(std::string& lhs, const Token& rhs);
     friend Token& operator+(Token& lhs, const Token& rhs);
+    friend Token& operator+(Token& lhs, const std::string& rhs);
+    friend std::string& operator+(std::string& lhs, const Token& rhs);
 
 protected:
     std::string _token;  // token string

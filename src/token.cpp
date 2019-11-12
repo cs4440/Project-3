@@ -223,7 +223,7 @@ bool operator==(const Token& lhs, const Token& rhs) {
  *
  * PRE-CONDITIONS:
  *  const Token lhs: left tok
- *  const Token rhs: right tok
+ *  const string rhs: right tok
  *
  * POST-CONDITIONS:
  *  none
@@ -259,7 +259,7 @@ bool operator!=(const Token& lhs, const Token& rhs) {
  *
  * PRE-CONDITIONS:
  *  const Token lhs: left tok
- *  const Token rhs: right tok
+ *  const string rhs: right tok
  *
  * POST-CONDITIONS:
  *  none
@@ -284,12 +284,52 @@ bool operator!=(const Token& lhs, const std::string& rhs) {
  *  none
  *
  * RETURN:
- *  bool
+ *  Token
  ******************************************************************************/
 Token& operator+=(Token& lhs, const Token& rhs) {
     lhs._token += rhs._token;
     lhs._type = rhs._type;
     lhs._sub_type = rhs._sub_type;
+    return lhs;
+}
+
+/*******************************************************************************
+ * DESCRIPTION:
+ *  Add two Tokens together with left hand side concatenating the right hand
+ *  side's string.
+ *
+ * PRE-CONDITIONS:
+ *  const Token lhs: left tok
+ *  const string rhs: right tok
+ *
+ * POST-CONDITIONS:
+ *  none
+ *
+ * RETURN:
+ *  Token
+ ******************************************************************************/
+Token& operator+=(Token& lhs, const std::string& rhs) {
+    lhs._token += rhs;
+    return lhs;
+}
+
+/*******************************************************************************
+ * DESCRIPTION:
+ *  Add two Tokens together with left hand side concatenating the right hand
+ *  side's string.
+ *
+ * PRE-CONDITIONS:
+ *  const string lhs: left tok
+ *  const Token rhs: right tok
+ *
+ * POST-CONDITIONS:
+ *  none
+ *
+ * RETURN:
+ *  std::string
+ ******************************************************************************/
+std::string& operator+=(std::string& lhs, const Token& rhs) {
+    lhs += rhs._token;
     return lhs;
 }
 
@@ -306,11 +346,51 @@ Token& operator+=(Token& lhs, const Token& rhs) {
  *  none
  *
  * RETURN:
- *  bool
+ *  Token
  ******************************************************************************/
 Token& operator+(Token& lhs, const Token& rhs) {
     lhs._token += rhs._token;
     lhs._type = rhs._type;
     lhs._sub_type = rhs._sub_type;
+    return lhs;
+}
+
+/*******************************************************************************
+ * DESCRIPTION:
+ *  Add two Tokens together with left hand side concatenating the right hand
+ *  side's string.
+ *
+ * PRE-CONDITIONS:
+ *  const Token lhs: left tok
+ *  const string rhs: right tok
+ *
+ * POST-CONDITIONS:
+ *  none
+ *
+ * RETURN:
+ *  Token
+ ******************************************************************************/
+Token& operator+(Token& lhs, const std::string& rhs) {
+    lhs._token += rhs;
+    return lhs;
+}
+
+/*******************************************************************************
+ * DESCRIPTION:
+ *  Add two Tokens together with left hand side concatenating the right hand
+ *  side's string.
+ *
+ * PRE-CONDITIONS:
+ *  const string lhs: left tok
+ *  const Token rhs: right tok
+ *
+ * POST-CONDITIONS:
+ *  none
+ *
+ * RETURN:
+ *  string
+ ******************************************************************************/
+std::string& operator+(std::string& lhs, const Token& rhs) {
+    lhs += rhs._token;
     return lhs;
 }

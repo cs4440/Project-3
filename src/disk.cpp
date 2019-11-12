@@ -131,9 +131,13 @@ bool Disk::remove_disk() {
     return is_removed;
 }
 
-void Disk::set_cylinders(std::size_t c) { _cylinders = c; }
+void Disk::set_cylinders(std::size_t c) {
+    if(!valid()) _cylinders = c;
+}
 
-void Disk::set_sectors(std::size_t s) { _sectors = s; }
+void Disk::set_sectors(std::size_t s) {
+    if(!valid()) _sectors = s;
+}
 
 std::string Disk::read_at(std::size_t cyl, std::size_t sec) {
     if(cyl > _cylinders - 1 || sec > _sectors - 1)

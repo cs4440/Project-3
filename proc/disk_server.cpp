@@ -53,7 +53,7 @@ void *connection_handler(void *socketfd) {
     int sockfd = *(int *)socketfd;
     std::string client_msg;
     Parser parser;
-    std::vector<Token> tokens;
+    std::vector<std::string> tokens;
     std::string diskfile = "client.disk";
     fs::Disk disk(diskfile);
 
@@ -110,22 +110,21 @@ void *connection_handler(void *socketfd) {
                 }
                 // Create disk
                 else if(tokens[0] == "C") {
-                    int is_created = false;
                     if(tokens.size() < 3)
                         sock::send_msg(sockfd,
                                        "ERROR. Insufficient arguments for C.");
                     else {
-                        int cyl = std::stoi(tokens[1].string());
-                        int sec = std::stoi(tokens[2].string());
-                        disk.set_cylinders(cyl);
-                        disk.set_sectors(sec);
-
                         try {
-                            is_created = disk.create();
+                            if(!disk.valid()) {
+                                int cyl = std::stoi(tokens[1]);
+                                int sec = std::stoi(tokens[2]);
 
-                            if(is_created)
+                                disk.set_cylinders(cyl);
+                                disk.set_sectors(sec);
+                                disk.create();
+
                                 sock::send_msg(sockfd, "Disk created.");
-                            else {
+                            } else {
                                 sock::send_msg(sockfd, "ERROR. Disk exists.");
                             }
                         } catch(const std::exception &e) {
@@ -158,8 +157,8 @@ void *connection_handler(void *socketfd) {
                                        "ERROR. Insufficient arguments for R");
                     else {
                         if(disk.valid()) {
-                            int cyl = std::stoi(tokens[1].string());
-                            int sec = std::stoi(tokens[2].string());
+                            int cyl = std::stoi(tokens[1]);
+                            int sec = std::stoi(tokens[2]);
 
                             std::string data = disk.read_at(cyl, sec);
                             sock::send_msg(sockfd, data);
@@ -177,12 +176,11 @@ void *connection_handler(void *socketfd) {
                     else {
                         if(disk.valid()) {
                             bool success = false;
-                            int cyl = std::stoi(tokens[1].string());
-                            int sec = std::stoi(tokens[2].string());
+                            int cyl = std::stoi(tokens[1]);
+                            int sec = std::stoi(tokens[2]);
 
-                            success =
-                                disk.write_at(tokens[3].string().c_str(), cyl,
-                                              sec, tokens[3].string().size());
+                            success = disk.write_at(tokens[3].c_str(), cyl, sec,
+                                                    tokens[3].size());
 
                             if(success)
                                 sock::send_msg(sockfd, "1");

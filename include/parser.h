@@ -23,7 +23,7 @@ public:
     Parser(char* buf = nullptr, std::size_t buf_size = Tokenizer::MAX_BUF);
 
     // ACCESSORS
-    const std::vector<Token>& get_tokens() const;  // list of tokens
+    const std::vector<std::string>& get_tokens() const;  // list of tokens
 
     // MUTATORS
     void clear();                       // reset all private states
@@ -36,9 +36,9 @@ private:
     static bool _need_init;                 // need class initializations?
     static int _table[MAX_ROWS][MAX_COLS];  // adjacency table
 
-    std::size_t _max_buf;        // max buffer size for tokenizer
-    Tokenizer _tokenizer;        // tokenizes buffer
-    std::vector<Token> _tokens;  // list of tokens
+    std::size_t _max_buf;              // max buffer size for tokenizer
+    Tokenizer _tokenizer;              // tokenizes buffer
+    std::vector<std::string> _tokens;  // list of tokens
 
     bool _init();  // init class
 
