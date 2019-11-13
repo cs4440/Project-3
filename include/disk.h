@@ -10,7 +10,6 @@
 #include <cstring>      // strncpy()
 #include <stdexcept>    // std::exception
 #include <string>       // std::string
-#include "utils.h"      // char_to_int(), int_to_char()
 
 namespace fs {
 
@@ -33,8 +32,9 @@ public:
     bool create();                      // create Disk
     bool open_disk(std::string n);      // initialize Disk from existing file
     bool remove_disk();                 // remove disk file from system
-    void set_cylinders(std::size_t c);  // set cylinders before init
-    void set_sectors(std::size_t s);    // set sectors before init
+    void set_cylinders(std::size_t c);  // set cylinders if valid
+    void set_sectors(std::size_t s);    // set sectors per cylinder if valid
+    void set_sec_size(std::size_t s);   // set sector size if valid
 
     // read at cylinder and sector index
     std::string read_at(std::size_t cyl, std::size_t sec);
@@ -45,9 +45,9 @@ public:
                   std::size_t bufsz = SECTOR_SZ);
 
 private:
-    unsigned _sec_sz;         // number of bytes in a sector
     std::size_t _cylinders;   // number of cyclinders
     std::size_t _sectors;     // number of sectors per cylinder
+    std::size_t _sec_sz;      // number of bytes in a sector
     std::size_t _bytes;       // bytes of disk without geometry info
     std::size_t _totalbytes;  // total bytes with geometry info
 

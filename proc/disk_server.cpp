@@ -121,6 +121,7 @@ void *connection_handler(void *socketfd) {
 
                                 disk.set_cylinders(cyl);
                                 disk.set_sectors(sec);
+                                disk.set_sec_size(fs::Disk::SECTOR_SZ);
                                 disk.create();
 
                                 sock::send_msg(sockfd, "Disk created.");

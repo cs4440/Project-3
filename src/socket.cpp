@@ -88,13 +88,10 @@ void Client::set_host(std::string host) { _host = host; }
 
 // send msg to socket
 void send_msg(int sockfd, const std::string &msg) {
-    char msg_len[4] = {0};
-    int msg_size = 0;
-
-    // get msg size and send message length
-    msg_size = msg.size();                  // get size
-    utils::int_to_char(msg_size, msg_len);  // convert to 4 byte char
-    if(write(sockfd, msg_len, 4) < 0) throw std::runtime_error("Disconnected");
+    // send message size to indicate the actual message size it will send
+    std::size_t msg_size = msg.size();
+    if(write(sockfd, (char *)&msg_size, sizeof(msg_size)) < 0)
+        throw std::runtime_error("Disconnected");
 
     // send message through socket
     if(write(sockfd, msg.c_str(), msg.size()) < 0)
@@ -102,11 +99,9 @@ void send_msg(int sockfd, const std::string &msg) {
 }
 
 void send_msg(int sockfd, char *msg, std::size_t sz) {
-    char msg_len[4] = {0};
-
-    // get msg size and send message length
-    utils::int_to_char(sz, msg_len);  // convert to 4 byte char
-    if(write(sockfd, msg_len, 4) < 0) throw std::runtime_error("Disconnected");
+    // send message size to indicate the actual message size it will send
+    if(write(sockfd, (char *)&sz, sizeof(sz)) < 0)
+        throw std::runtime_error("Disconnected");
 
     // send message through socket
     if(write(sockfd, msg, sz) < 0) throw std::runtime_error("Disconnected");
@@ -114,14 +109,14 @@ void send_msg(int sockfd, char *msg, std::size_t sz) {
 
 // read from socket and return by ref to msg
 void read_msg(int sockfd, std::string &msg) {
-    char msg_len[4] = {0}, buf[BUFLEN] = {0};
-    int msg_size = 0, bytes = 0, totalbytes = 0;
+    char buf[BUFLEN] = {0};
+    std::size_t msg_size = 0, bytes = 0, totalbytes = 0;
     msg.clear();
 
-    bytes = read(sockfd, msg_len, 4);  // read message size
-    if(bytes > 0) {
-        utils::char_to_int(msg_len, msg_size);  // convert 4 byte char to int
+    // read first message to determine message size
+    bytes = read(sockfd, (char *)&msg_size, sizeof(msg_size));
 
+    if(bytes > 0) {
         // keep reading from socket until msg_sze is reached
         while(bytes > 0 && totalbytes < msg_size) {
             bytes = read(sockfd, buf, BUFLEN - 1);
