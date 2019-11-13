@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
         sockfd = client.sockfd();
 
         // read server welcome message
-        sock::read_msg(sockfd, server_msg);
+        sock::recv_msg(sockfd, server_msg);
         std::cout << server_msg << std::endl;
 
         // send I command to get geometry info
@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
         std::stringstream ss;
         std::cout << "I" << std::endl;
         sock::send_msg(sockfd, "I");
-        sock::read_msg(sockfd, server_msg);
+        sock::recv_msg(sockfd, server_msg);
         ss << server_msg;
         ss >> cyl >> sec;
 
@@ -53,7 +53,7 @@ int main(int argc, char* argv[]) {
             std::cout << "Server has no disk. Creating with: " + create
                       << std::endl;
             sock::send_msg(sockfd, create);
-            sock::read_msg(sockfd, server_msg);
+            sock::recv_msg(sockfd, server_msg);
         }
         std::cout << server_msg << std::endl;
 
@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
                     rand_msg = "R " + get_rand_disk_indices(cyl, sec);
                     std::cout << "R" << std::endl;
                     sock::send_msg(sockfd, rand_msg);
-                    sock::read_msg(sockfd, server_msg);
+                    sock::recv_msg(sockfd, server_msg);
                     break;
                 case 1:
                     rand_msg.clear();
@@ -78,7 +78,7 @@ int main(int argc, char* argv[]) {
                                get_rand_128bytes_data();
                     std::cout << "W" << std::endl;
                     sock::send_msg(sockfd, rand_msg);
-                    sock::read_msg(sockfd, server_msg);
+                    sock::recv_msg(sockfd, server_msg);
                     break;
                 default:
                     std::cout << "ERROR Random" << std::endl;

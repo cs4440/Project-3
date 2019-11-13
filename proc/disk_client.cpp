@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
         sockfd = client.sockfd();
 
         // read server welcome message
-        sock::read_msg(sockfd, server_msg);
+        sock::recv_msg(sockfd, server_msg);
         std::cout << server_msg << std::endl;
 
         while(!exit) {
@@ -31,7 +31,7 @@ int main(int argc, char* argv[]) {
 
             if(line.size()) {
                 sock::send_msg(sockfd, line);
-                sock::read_msg(sockfd, server_msg);
+                sock::recv_msg(sockfd, server_msg);
                 std::cout << server_msg << std::endl;
 
                 if(line == "exit") break;

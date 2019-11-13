@@ -125,7 +125,7 @@ void send_msg(int sockfd, char *msg, std::size_t sz) {
 }
 
 // read from socket and return by ref to msg
-void read_msg(int sockfd, std::string &msg) {
+void recv_msg(int sockfd, std::string &msg) {
     char buf[BUFLEN] = {0};
     std::size_t msg_size = 0, totalbytes = 0;
     ssize_t bytes = -1;

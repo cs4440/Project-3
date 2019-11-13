@@ -102,7 +102,7 @@ void *connection_handler(void *socketfd) {
         // read message from client
         // read first 4 bytes to determine message size
         while(!exit) {
-            sock::read_msg(sockfd, client_msg);
+            sock::recv_msg(sockfd, client_msg);
             std::cout << client_msg << std::endl;
 
             if(client_msg.size()) {
