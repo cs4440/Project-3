@@ -3,8 +3,6 @@
 #include <iostream>
 #include "../include/socket.h"
 
-#define BUFLEN 1024
-
 int main(int argc, char* argv[]) {
     bool exit = false;
     sock::Client client;

@@ -4,8 +4,6 @@
 #include "../include/parser.h"  // Parser, get cli tokens with grammar
 #include "../include/socket.h"  // Socket class
 
-#define BUFLEN 1024
-
 void *connection_handler(void *socketfd);
 
 int main(int argc, char *argv[]) {
@@ -59,7 +57,7 @@ void *connection_handler(void *socketfd) {
 
     // static messages
     std::string welcome =
-        "Welcome to server.\n\n"
+        "WELCOME TO SERVER\n\n"
         "Available commands are:\n"
         "[C]reate - Create/initialize disk. 'C [CYL] [SEC]'\n"
         "[D]elete - Delete current disk\n"
@@ -83,7 +81,7 @@ void *connection_handler(void *socketfd) {
             welcome += need_create;
     } catch(const std::exception &e) {
         welcome +=
-            "ERROR. Initializating existing disk: " + std::string(e.what());
+            "ERROR Initializating existing disk: " + std::string(e.what());
     }
 
     try {
@@ -112,7 +110,7 @@ void *connection_handler(void *socketfd) {
                 else if(tokens[0] == "C") {
                     if(tokens.size() < 3)
                         sock::send_msg(sockfd,
-                                       "ERROR. Insufficient arguments for C.");
+                                       "ERROR Insufficient arguments for C.");
                     else {
                         try {
                             if(!disk.valid()) {
@@ -124,9 +122,12 @@ void *connection_handler(void *socketfd) {
                                 disk.set_sec_size(fs::Disk::SECTOR_SZ);
                                 disk.create();
 
-                                sock::send_msg(sockfd, "Disk created.");
+                                sock::send_msg(
+                                    sockfd, std::to_string(disk.cylinder()) +
+                                                " " +
+                                                std::to_string(disk.sector()));
                             } else {
-                                sock::send_msg(sockfd, "ERROR. Disk exists.");
+                                sock::send_msg(sockfd, "ERROR Disk exists.");
                             }
                         } catch(const std::exception &e) {
                             sock::send_msg(sockfd, e.what());
@@ -148,14 +149,13 @@ void *connection_handler(void *socketfd) {
                     if(disk.valid())
                         sock::send_msg(sockfd, disk.geometry());
                     else
-                        sock::send_msg(sockfd,
-                                       "ERROR. No disk.\n" + need_create);
+                        sock::send_msg(sockfd, "0 0\n" + need_create);
                 }
                 // Read disk
                 else if(tokens[0] == "R") {
                     if(tokens.size() < 3)
                         sock::send_msg(sockfd,
-                                       "ERROR. Insufficient arguments for R");
+                                       "ERROR Insufficient arguments for R");
                     else {
                         if(disk.valid()) {
                             int cyl = std::stoi(tokens[1]);
@@ -166,14 +166,14 @@ void *connection_handler(void *socketfd) {
 
                         } else
                             sock::send_msg(sockfd,
-                                           "ERROR. No disk.\n" + need_create);
+                                           "ERROR No disk.\n" + need_create);
                     }
                 }
                 // Write disk
                 else if(tokens[0] == "W") {
                     if(tokens.size() < 4)
                         sock::send_msg(sockfd,
-                                       "ERROR. Insufficient arguments for W");
+                                       "ERROR Insufficient arguments for W");
                     else {
                         if(disk.valid()) {
                             bool success = false;
@@ -189,7 +189,7 @@ void *connection_handler(void *socketfd) {
                                 sock::send_msg(sockfd, "0");
                         } else
                             sock::send_msg(sockfd,
-                                           "ERROR. No disk.\n" + need_create);
+                                           "ERROR No disk.\n" + need_create);
                     }
                 }
                 // Unknown commands
@@ -201,7 +201,7 @@ void *connection_handler(void *socketfd) {
         }
         std::cout << "Client called exit" << std::endl;
     } catch(const std::exception &e) {
-        std::cout << "Client error. " << e.what() << std::endl;
+        std::cout << "Client error " << e.what() << std::endl;
     }
 
     delete(int *)socketfd;

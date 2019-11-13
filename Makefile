@@ -15,7 +15,7 @@ FS              := entry.o file.o directory.o filesystem.o disk.o
 SOCKET          := socket.o
 ALL             := basic_client basic_server\
                    dir_listing_client dir_listing_server\
-                   disk_server disk_client
+                   disk_server disk_client disk_client_rand
 
 # $@ targt name
 # $< first prerequisite
@@ -60,6 +60,12 @@ disk_client: disk_client.o $(SOCKET)
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 disk_client.o: $(PROC)/disk_client.cpp
+	$(CXX) $(CXXFLAGS) -c $<
+
+disk_client_rand: disk_client_rand.o $(SOCKET)
+	$(CXX) -o $@ $^ $(LDFLAGS)
+
+disk_client_rand.o: $(PROC)/disk_client_rand.cpp
 	$(CXX) $(CXXFLAGS) -c $<
 
 # UTILS
@@ -113,7 +119,7 @@ filesystem.o: ${SRC}/filesystem.cpp\
 # TESTS
 tests: $(TESTS)
 
-test: test.o $(FS)
+test: test.o $(PARSER)
 	$(CXX) -o $@ $^
 
 test.o: $(TESTDIR)/test.cpp
