@@ -66,8 +66,6 @@ void *connection_handler(void *socketfd) {
     fs::Disk disk(diskfile, CYLINDERS, SECTORS);
     disk.set_track_time(TRACK_TIME);
 
-    std::cout << "track time " << disk.track_time() << std::endl;
-
     // static messages
     std::string welcome =
         "WELCOME TO SERVER\n\n"
@@ -132,7 +130,6 @@ void *connection_handler(void *socketfd) {
 
                                 disk.set_cylinders(cyl);
                                 disk.set_sectors(sec);
-                                disk.set_sector_size(fs::Disk::SECTOR_SZ);
                                 disk.create();
 
                                 sock::send_msg(
@@ -214,9 +211,10 @@ void *connection_handler(void *socketfd) {
         }
         std::cout << "Client called exit" << std::endl;
     } catch(const std::exception &e) {
-        std::cout << "Client error " << e.what() << std::endl;
+        std::cout << "Client error. " << e.what() << std::endl;
     }
 
+    close(sockfd);
     delete(int *)socketfd;
 
     return 0;

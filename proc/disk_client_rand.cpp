@@ -46,8 +46,8 @@ int main(int argc, char* argv[]) {
 
         // create disk if there is no disk
         if(cyl == 0) {
-            cyl = 5;
-            sec = 10;
+            cyl = 3;
+            sec = 32;
             std::string create =
                 "C " + std::to_string(cyl) + " " + std::to_string(sec);
             std::cout << "Server has no disk. Creating with: " + create

@@ -69,14 +69,13 @@ void Client::start() {
     _serv_addr.sin_port = htons(_port);
 
     // Convert IPv4 and IPv6 addresses from text to binary form
-    if(inet_pton(AF_INET, _host.c_str(), &_serv_addr.sin_addr) <= 0)
-        std::runtime_error(
-            "ERROR Invalid address / Address not supported on port " +
-            std::to_string(_port));
+    if(inet_pton(AF_INET, _host.c_str(), &_serv_addr.sin_addr) < 0)
+        throw std::runtime_error("ERROR Invalid address port " +
+                                 std::to_string(_port));
 
     if(connect(_sockfd, (struct sockaddr *)&_serv_addr, sizeof(_serv_addr)) <
        0) {
-        std::runtime_error("ERROR connecting");
+        throw std::runtime_error("ERROR connecting");
     }
 }
 
@@ -88,23 +87,41 @@ void Client::set_host(std::string host) { _host = host; }
 
 // send msg to socket
 void send_msg(int sockfd, const std::string &msg) {
-    // send message size to indicate the actual message size it will send
-    std::size_t msg_size = msg.size();
-    if(write(sockfd, (char *)&msg_size, sizeof(msg_size)) < 0)
-        throw std::runtime_error("Disconnected");
+    ssize_t bytes = -1;
 
-    // send message through socket
-    if(write(sockfd, msg.c_str(), msg.size()) < 0)
-        throw std::runtime_error("Disconnected");
+    try {
+        if(msg.size() > 0) {
+            // send size to indicate the actual message size it will send
+            std::size_t msg_size = msg.size();
+            bytes =
+                send(sockfd, (char *)&msg_size, sizeof(msg_size), MSG_NOSIGNAL);
+            throw_socket_io(bytes);
+
+            // send message through socket
+            bytes = send(sockfd, msg.c_str(), msg.size(), MSG_NOSIGNAL);
+            throw_socket_io(bytes);
+        }
+    } catch(const std::exception &e) {
+        throw;
+    }
 }
 
 void send_msg(int sockfd, char *msg, std::size_t sz) {
-    // send message size to indicate the actual message size it will send
-    if(write(sockfd, (char *)&sz, sizeof(sz)) < 0)
-        throw std::runtime_error("Disconnected");
+    ssize_t bytes = -1;
 
-    // send message through socket
-    if(write(sockfd, msg, sz) < 0) throw std::runtime_error("Disconnected");
+    try {
+        if(sz > 0) {
+            // send size to indicate the actual message size it will send
+            bytes = send(sockfd, (char *)&sz, sizeof(sz), MSG_NOSIGNAL);
+            throw_socket_io(bytes);
+
+            // send message through socket
+            bytes = send(sockfd, msg, sz, MSG_NOSIGNAL);
+            throw_socket_io(bytes);
+        }
+    } catch(const std::exception &e) {
+        throw;
+    }
 }
 
 // read from socket and return by ref to msg
@@ -114,25 +131,35 @@ void read_msg(int sockfd, std::string &msg) {
     ssize_t bytes = -1;
     msg.clear();
 
-    // read first message to determine message size
-    bytes = read(sockfd, (char *)&msg_size, sizeof(msg_size));
+    try {
+        // read first message to determine message size
+        bytes = recv(sockfd, (char *)&msg_size, sizeof(msg_size), 0);
+        throw_socket_io(bytes);
 
-    if(bytes > 0) {
-        // keep reading from socket until msg_sze is reached
-        while(bytes > 0 && totalbytes < msg_size) {
-            bytes = read(sockfd, buf, BUFLEN - 1);
-            if(bytes) {
+        if(msg_size > 0) {
+            // keep reading from socket until msg_sze is reached
+            while(bytes > 0 && totalbytes < msg_size) {
+                bytes = recv(sockfd, buf, BUFLEN - 1, 0);
+                throw_socket_io(bytes);
+
                 buf[bytes] = '\0';
                 msg += buf;
 
                 totalbytes += bytes;
-            } else
-                throw std::runtime_error("Disconnected");
+            }
+            bytes = 0;
+            totalbytes = 0;
         }
-        bytes = 0;
-        totalbytes = 0;
-    } else
-        throw std::runtime_error("Disconnected");
+    } catch(const std::exception &e) {
+        throw;
+    }
+}
+
+void throw_socket_io(int value) {
+    if(value < 0)
+        throw std::runtime_error("ERROR send/recv from peer");
+    else if(value == 0)
+        throw std::runtime_error("Disonnected");
 }
 
 }  // namespace sock

@@ -5,10 +5,10 @@ namespace fs {
 Disk::Disk(std::string name, std::size_t cyl, std::size_t sec)
     : _cylinders(cyl),
       _sectors(sec),
-      _sec_sz(SECTOR_SZ),
-      _bytes(_cylinders * _sectors * _sec_sz),
+      _block(BLOCK_SZ),
+      _bytes(_cylinders * _sectors * _block),
       _totalbytes(_bytes + sizeof(_cylinders) + sizeof(_sectors) +
-                  sizeof(_sec_sz)),
+                  sizeof(_block)),
       _track_time(TRACK_TIME),
       _name(name),
       _fd(-1),
@@ -23,7 +23,7 @@ std::size_t Disk::cylinder() { return _cylinders; }
 
 std::size_t Disk::sector() { return _sectors; }
 
-std::size_t Disk::sector_size() { return _sec_sz; }
+std::size_t Disk::block() { return _block; }
 
 std::size_t Disk::track_time() { return _track_time; }
 
@@ -46,6 +46,7 @@ bool Disk::valid() { return _file != nullptr; }
 
 bool Disk::create() {
     bool is_created = false;
+    std::size_t offset = 0;
     struct stat sb;  // file stats
 
     // if file doesn't exist
@@ -56,9 +57,9 @@ bool Disk::create() {
         if(_fd == -1) throw std::runtime_error("Error creating disk file");
 
         // update private vairables
-        _bytes = _cylinders * _sectors * _sec_sz;
-        _totalbytes =
-            _bytes + sizeof(_cylinders) + sizeof(_sectors) + sizeof(_sec_sz);
+        offset = sizeof(_cylinders) + sizeof(_sectors) + sizeof(_block);
+        _bytes = _cylinders * _sectors * _block;
+        _totalbytes = _bytes + offset;
 
         // zero fill file of size bytes
         for(std::size_t i = 0; i < _totalbytes; ++i) write(_fd, "\0", 1);
@@ -67,7 +68,7 @@ bool Disk::create() {
         lseek(_fd, 0, SEEK_SET);
         write(_fd, (char *)&_cylinders, sizeof(_cylinders));
         write(_fd, (char *)&_sectors, sizeof(_sectors));
-        write(_fd, (char *)&_sec_sz, sizeof(_sec_sz));
+        write(_fd, (char *)&_block, sizeof(_block));
 
         // check if file stats is consisent
         if(fstat(_fd, &sb) == 0 && sb.st_size != (int)_totalbytes)
@@ -78,8 +79,7 @@ bool Disk::create() {
                               MAP_SHARED, _fd, 0);
 
         // offset starting file address by eometry info size
-        _file =
-            _ofile + sizeof(_cylinders) + sizeof(_sectors) + sizeof(_sec_sz);
+        _file = _ofile + offset;
 
         is_created = true;
     }
@@ -89,6 +89,7 @@ bool Disk::create() {
 
 bool Disk::open_disk(std::string n) {
     bool is_opened = false;
+    std::size_t offset;
     struct stat sb;  // file stats
 
     // remove this disk if exists
@@ -110,16 +111,16 @@ bool Disk::open_disk(std::string n) {
                               MAP_SHARED, _fd, 0);
 
         // offset starting file address by eometry info size
-        _file =
-            _ofile + sizeof(_cylinders) + sizeof(_sectors) + sizeof(_sec_sz);
+        offset = sizeof(_cylinders) + sizeof(_sectors) + sizeof(_block);
+        _file = _ofile + offset;
 
         // update geometry info and size
         read(_fd, (char *)&_cylinders, sizeof(_cylinders));
         read(_fd, (char *)&_sectors, sizeof(_sectors));
-        read(_fd, (char *)&_sec_sz, sizeof(_sec_sz));
+        read(_fd, (char *)&_block, sizeof(_block));
+
         _totalbytes = sb.st_size;
-        _bytes = _totalbytes - sizeof(_cylinders) - sizeof(_sectors) -
-                 sizeof(_sec_sz);
+        _bytes = _totalbytes - offset;
         _name = n;
 
         is_opened = true;
@@ -146,8 +147,8 @@ void Disk::set_sectors(std::size_t s) {
     if(!valid()) _sectors = s;
 }
 
-void Disk::set_sector_size(std::size_t s) {
-    if(!valid()) _sec_sz = s;
+void Disk::set_block_size(std::size_t s) {
+    if(!valid()) _block = s;
 }
 
 void Disk::set_track_time(std::size_t t) { _track_time = t; }
@@ -158,32 +159,31 @@ std::string Disk::read_at(std::size_t cyl, std::size_t sec) {
     else {
         usleep(_track_time);
 
-        return "1" +
-               std::string(_file + (cyl * sec * _sec_sz) + (sec * _sec_sz),
-                           SECTOR_SZ);
+        return "1" + std::string(_file + (cyl * sec * _block) + (sec * _block),
+                                 BLOCK_SZ);
     }
 }
 
 bool Disk::write_at(const char *buf, std::size_t cyl, std::size_t sec,
                     std::size_t bufsz) {
-    if(cyl > _cylinders - 1 || sec > _sectors - 1 || bufsz > SECTOR_SZ)
+    if(cyl > _cylinders - 1 || sec > _sectors - 1 || bufsz > BLOCK_SZ)
         return false;
     else {
         usleep(_track_time);
 
-        strncpy(_file + (cyl * sec * _sec_sz) + (sec * _sec_sz), buf, bufsz);
+        strncpy(_file + (cyl * sec * _block) + (sec * _block), buf, bufsz);
         return true;
     }
 }
 
 bool Disk::write_at(char *buf, std::size_t cyl, std::size_t sec,
                     std::size_t bufsz) {
-    if(cyl > _cylinders - 1 || sec > _sectors - 1 || bufsz > SECTOR_SZ)
+    if(cyl > _cylinders - 1 || sec > _sectors - 1 || bufsz > BLOCK_SZ)
         return false;
     else {
         usleep(_track_time);
 
-        strncpy(_file + (cyl * sec * _sec_sz) + (sec * _sec_sz), buf, bufsz);
+        strncpy(_file + (cyl * sec * _block) + (sec * _block), buf, bufsz);
         return true;
     }
 }

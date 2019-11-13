@@ -16,8 +16,8 @@ namespace fs {
 class Disk {
 public:
     enum {
-        SECTOR_SZ = 128,  // bytes
-        TRACK_TIME = 10   // microseconds
+        BLOCK_SZ = 128,   // bytes in a sector
+        TRACK_TIME = 100  // microseconds
     };
 
     Disk(std::string name, std::size_t cyl = 1, std::size_t sec = 32);
@@ -25,7 +25,7 @@ public:
 
     std::size_t cylinder();
     std::size_t sector();
-    std::size_t sector_size();
+    std::size_t block();
     std::size_t track_time();
     std::size_t bytes();
     std::size_t total_bytes();
@@ -35,26 +35,26 @@ public:
     std::string geometry();  // return a string with disk geometry
     bool valid();
 
-    bool create();                        // create Disk
-    bool open_disk(std::string n);        // initialize Disk from existing file
-    bool remove_disk();                   // remove disk file from system
-    void set_cylinders(std::size_t c);    // set cylinders if valid
-    void set_sectors(std::size_t s);      // set sectors per cylinder if valid
-    void set_sector_size(std::size_t s);  // set sector size if valid
-    void set_track_time(std::size_t t);   // set sector size if valid
+    bool create();                       // create Disk
+    bool open_disk(std::string n);       // initialize Disk from existing file
+    bool remove_disk();                  // remove disk file from system
+    void set_cylinders(std::size_t c);   // set cylinders if valid
+    void set_sectors(std::size_t s);     // set sectors per cylinder if valid
+    void set_block_size(std::size_t s);  // set sector size if valid
+    void set_track_time(std::size_t t);  // set sector size if valid
 
     // read at cylinder and sector index
     std::string read_at(std::size_t cyl, std::size_t sec);
     // write str of _sec_sz
     bool write_at(const char* buf, std::size_t cyl, std::size_t sec,
-                  std::size_t bufsz = SECTOR_SZ);
+                  std::size_t bufsz = BLOCK_SZ);
     bool write_at(char* buf, std::size_t cyl, std::size_t sec,
-                  std::size_t bufsz = SECTOR_SZ);
+                  std::size_t bufsz = BLOCK_SZ);
 
 private:
     std::size_t _cylinders;   // number of cyclinders
     std::size_t _sectors;     // number of sectors per cylinder
-    std::size_t _sec_sz;      // number of bytes in a sector
+    std::size_t _block;       // number of bytes in a sector
     std::size_t _bytes;       // bytes of disk without geometry info
     std::size_t _totalbytes;  // total bytes with geometry info
     std::size_t _track_time;

@@ -41,7 +41,7 @@ public:
 private:
     struct sockaddr_in _cli_addr;
     int _opt;
-    int _addrlen;
+    socklen_t _addrlen;
 };
 
 class Client : public Socket {
@@ -58,10 +58,15 @@ private:
 
 // HELPER FUNCTIONS
 
-void send_msg(int sockfd, const std::string &msg);     // send msg to socket
+void send_msg(int sockfd, const std::string &msg);  // send msg to socket
+
 void send_msg(int sockfd, char *msg, std::size_t sz);  // send msg to socket
+
 // read from socket, throw exception on disconnected
 void read_msg(int sockfd, std::string &msg);
+
+// from read, recv, write, send operations
+void throw_socket_io(int value);
 
 }  // namespace sock
 
