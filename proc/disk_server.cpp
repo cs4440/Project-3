@@ -55,8 +55,12 @@ int main(int argc, char *argv[]) {
 }
 
 void *connection_handler(void *socketfd) {
-    bool exit = false;
+    // get sockfd and deallocate argument
     int sockfd = *(int *)socketfd;
+    delete(int *)socketfd;
+    socketfd = nullptr;
+
+    bool exit = false;
     std::string client_msg;
     Parser parser;
     std::vector<std::string> tokens;
@@ -114,8 +118,9 @@ void *connection_handler(void *socketfd) {
 
                 // Exit
                 if(tokens[0] == "exit") {
+                    std::cout << "Client requested exit" << std::endl;
                     sock::send_msg(sockfd, "Closing client");
-                    break;
+                    exit = true;
                 }
                 // Create disk
                 else if(tokens[0] == "C") {
@@ -209,13 +214,11 @@ void *connection_handler(void *socketfd) {
             } else
                 sock::send_msg(sockfd, "Unknown command");
         }
-        std::cout << "Client called exit" << std::endl;
     } catch(const std::exception &e) {
         std::cout << "Client error. " << e.what() << std::endl;
     }
 
     close(sockfd);
-    delete(int *)socketfd;
 
     return 0;
 }

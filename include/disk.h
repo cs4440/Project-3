@@ -27,12 +27,12 @@ public:
     std::size_t sector();
     std::size_t block();
     std::size_t track_time();
-    std::size_t bytes();
-    std::size_t total_bytes();
+    std::size_t logical_bytes();
+    std::size_t physical_bytes();
     std::string name();
+    std::string geometry();  // return a string with disk geometry
     int fd();
     char* file();
-    std::string geometry();  // return a string with disk geometry
     bool valid();
 
     bool create();                       // create Disk
@@ -52,17 +52,18 @@ public:
                   std::size_t bufsz = BLOCK_SZ);
 
 private:
-    std::size_t _cylinders;   // number of cyclinders
-    std::size_t _sectors;     // number of sectors per cylinder
-    std::size_t _block;       // number of bytes in a sector
-    std::size_t _bytes;       // bytes of disk without geometry info
-    std::size_t _totalbytes;  // total bytes with geometry info
-    std::size_t _track_time;
+    std::size_t _cylinders;       // number of cyclinders
+    std::size_t _sectors;         // number of sectors per cylinder
+    std::size_t _block;           // number of bytes in a sector
+    std::size_t _offset;          // offset to read real data
+    std::size_t _logical_bytes;   // bytes of disk without geometry info
+    std::size_t _physical_bytes;  // total bytes with geometry info
+    std::size_t _track_time;      // microseconds to sleep during read/write
 
     std::string _name;  // disk name
     int _fd;            // file decriptor to physical file
-    char* _file;        // memory pointer to file
-    char* _ofile;       // original file without offset
+    char* _file;        // logical file where actual data starts
+    char* _pfile;       // physical file, original address from mmap
 
     void _close_fd();    // close file descriptor
     void _unmap_file();  // unmap virtual memory from file

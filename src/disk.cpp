@@ -6,13 +6,14 @@ Disk::Disk(std::string name, std::size_t cyl, std::size_t sec)
     : _cylinders(cyl),
       _sectors(sec),
       _block(BLOCK_SZ),
-      _bytes(_cylinders * _sectors * _block),
-      _totalbytes(_bytes + sizeof(_cylinders) + sizeof(_sectors) +
-                  sizeof(_block)),
+      _offset(sizeof(_cylinders) + sizeof(_sectors) + sizeof(_block)),
+      _logical_bytes(_cylinders * _sectors * _block),
+      _physical_bytes(_logical_bytes + _offset),
       _track_time(TRACK_TIME),
       _name(name),
       _fd(-1),
-      _file(nullptr) {}
+      _file(nullptr),
+      _pfile(nullptr) {}
 
 Disk::~Disk() {
     _unmap_file();  // unmap virtual memory from file
@@ -27,9 +28,9 @@ std::size_t Disk::block() { return _block; }
 
 std::size_t Disk::track_time() { return _track_time; }
 
-std::size_t Disk::bytes() { return _bytes; }
+std::size_t Disk::logical_bytes() { return _logical_bytes; }
 
-std::size_t Disk::total_bytes() { return _totalbytes; }
+std::size_t Disk::physical_bytes() { return _physical_bytes; }
 
 std::string Disk::name() { return _name; }
 
@@ -42,11 +43,10 @@ std::string Disk::geometry() {
                        std::to_string(_sectors));
 }
 
-bool Disk::valid() { return _file != nullptr; }
+bool Disk::valid() { return _pfile != nullptr; }
 
 bool Disk::create() {
     bool is_created = false;
-    std::size_t offset = 0;
     struct stat sb;  // file stats
 
     // if file doesn't exist
@@ -57,29 +57,28 @@ bool Disk::create() {
         if(_fd == -1) throw std::runtime_error("Error creating disk file");
 
         // update private vairables
-        offset = sizeof(_cylinders) + sizeof(_sectors) + sizeof(_block);
-        _bytes = _cylinders * _sectors * _block;
-        _totalbytes = _bytes + offset;
+        _logical_bytes = _cylinders * _sectors * _block;
+        _physical_bytes = _logical_bytes + _offset;
 
         // zero fill file of size bytes
-        for(std::size_t i = 0; i < _totalbytes; ++i) write(_fd, "\0", 1);
+        for(std::size_t i = 0; i < _physical_bytes; ++i) write(_fd, "\0", 1);
 
-        // write geometry info, total size = 8 * 3 = 24 bytes
+        // write geometry info at start of physical disk
         lseek(_fd, 0, SEEK_SET);
         write(_fd, (char *)&_cylinders, sizeof(_cylinders));
         write(_fd, (char *)&_sectors, sizeof(_sectors));
         write(_fd, (char *)&_block, sizeof(_block));
 
         // check if file stats is consisent
-        if(fstat(_fd, &sb) == 0 && sb.st_size != (int)_totalbytes)
-            throw std::runtime_error("Error disk size inconsistent");
+        if(fstat(_fd, &sb) == 0 && sb.st_size != (int)_physical_bytes)
+            throw std::runtime_error("Error checking disk file descriptor");
 
-        // map file to memory
-        _ofile = (char *)mmap(NULL, sb.st_size, PROT_READ | PROT_WRITE,
+        // map physical file to memory
+        _pfile = (char *)mmap(NULL, sb.st_size, PROT_READ | PROT_WRITE,
                               MAP_SHARED, _fd, 0);
 
         // offset starting file address by eometry info size
-        _file = _ofile + offset;
+        _file = _pfile + _offset;
 
         is_created = true;
     }
@@ -89,7 +88,6 @@ bool Disk::create() {
 
 bool Disk::open_disk(std::string n) {
     bool is_opened = false;
-    std::size_t offset;
     struct stat sb;  // file stats
 
     // remove this disk if exists
@@ -104,23 +102,22 @@ bool Disk::open_disk(std::string n) {
 
         // check if file stats is consisent
         if(fstat(_fd, &sb) == -1)
-            throw std::runtime_error("Error disk size inconsistent");
+            throw std::runtime_error("Error checking disk file descriptor");
 
-        // map file to memory
-        _ofile = (char *)mmap(NULL, sb.st_size, PROT_READ | PROT_WRITE,
+        // map phyhsical file to memory
+        _pfile = (char *)mmap(NULL, sb.st_size, PROT_READ | PROT_WRITE,
                               MAP_SHARED, _fd, 0);
 
         // offset starting file address by eometry info size
-        offset = sizeof(_cylinders) + sizeof(_sectors) + sizeof(_block);
-        _file = _ofile + offset;
+        _file = _pfile + _offset;
 
-        // update geometry info and size
+        // update geometry info
         read(_fd, (char *)&_cylinders, sizeof(_cylinders));
         read(_fd, (char *)&_sectors, sizeof(_sectors));
         read(_fd, (char *)&_block, sizeof(_block));
 
-        _totalbytes = sb.st_size;
-        _bytes = _totalbytes - offset;
+        _physical_bytes = sb.st_size;
+        _logical_bytes = _physical_bytes - _offset;
         _name = n;
 
         is_opened = true;
@@ -196,9 +193,9 @@ void Disk::_close_fd() {
 }
 
 void Disk::_unmap_file() {
-    if(_ofile) {
-        munmap(_ofile, _totalbytes);
-        _ofile = _file = nullptr;
+    if(_pfile) {
+        munmap(_pfile, _physical_bytes);
+        _pfile = _file = nullptr;
     }
 }
 

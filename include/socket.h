@@ -65,7 +65,7 @@ void send_msg(int sockfd, char *msg, std::size_t sz);
 // receive from socket, blocking mode, throws on error
 void recv_msg(int sockfd, std::string &msg);
 
-// throw from read, recv, write, send return error values
+// throw from read, recv, write, send return error values for blocking mode
 void throw_socket_io(int value);
 
 }  // namespace sock

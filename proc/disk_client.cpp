@@ -16,7 +16,7 @@ int main(int argc, char* argv[]) {
         client.set_host(host);
         client.set_port(port);
         client.start();
-        std::cout << "Client started on host " << host << ":" << port
+        std::cout << "Client connected to server " << host << ":" << port
                   << std::endl;
 
         sockfd = client.sockfd();
@@ -37,11 +37,9 @@ int main(int argc, char* argv[]) {
                 if(line == "exit") break;
             }
         }
-
     } catch(const std::exception& e) {
-        std::cerr << "Client error on host " << host << ":" << port << ". "
+        std::cerr << "Server error on " << host << ":" << port << ". "
                   << e.what() << std::endl;
-        ;
     }
 
     client.stop();
