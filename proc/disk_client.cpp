@@ -22,6 +22,7 @@ int main(int argc, char* argv[]) {
         sockfd = client.sockfd();
 
         // read server welcome message
+        sock::send_msg(sockfd, "welcome");
         sock::recv_msg(sockfd, server_msg);
         std::cout << server_msg << std::endl;
 

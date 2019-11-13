@@ -100,11 +100,6 @@ void *connection_handler(void *socketfd) {
     }
 
     try {
-        // Send welcome message to client
-        sock::send_msg(sockfd, welcome);
-
-        // read message from client
-        // read first 4 bytes to determine message size
         while(!exit) {
             sock::recv_msg(sockfd, client_msg);
             std::cout << client_msg << std::endl;
@@ -122,6 +117,12 @@ void *connection_handler(void *socketfd) {
                     sock::send_msg(sockfd, "Closing client");
                     exit = true;
                 }
+                // Send welcome message to client
+                else if(tokens[0] == "welcome")
+                    sock::send_msg(sockfd, welcome);
+                // Send ping response with 1
+                else if(tokens[0] == "ping")
+                    sock::send_msg(sockfd, "1");
                 // Create disk
                 else if(tokens[0] == "C") {
                     if(tokens.size() < 3)
@@ -151,10 +152,7 @@ void *connection_handler(void *socketfd) {
                 }
                 // Remove disk
                 else if(tokens[0] == "D") {
-                    int is_removed = false;
-                    is_removed = disk.remove_disk();
-
-                    if(is_removed)
+                    if(disk.remove_disk())
                         sock::send_msg(sockfd, "1");
                     else
                         sock::send_msg(sockfd, "0");
@@ -208,9 +206,8 @@ void *connection_handler(void *socketfd) {
                     }
                 }
                 // Unknown commands
-                else {
+                else
                     sock::send_msg(sockfd, "Unknown command");
-                }
             } else
                 sock::send_msg(sockfd, "Unknown command");
         }

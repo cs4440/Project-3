@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
         client.set_host(host);
         client.set_port(port);
         client.start();
-        std::cout << "Client started on host " << host << ":" << port
+        std::cout << "Client connected to server " << host << ":" << port
                   << std::endl;
 
         int num = 0, seed = 0;
@@ -32,6 +32,7 @@ int main(int argc, char* argv[]) {
         sockfd = client.sockfd();
 
         // read server welcome message
+        sock::send_msg(sockfd, "welcome");
         sock::recv_msg(sockfd, server_msg);
         std::cout << server_msg << std::endl;
 
@@ -46,8 +47,8 @@ int main(int argc, char* argv[]) {
 
         // create disk if there is no disk
         if(cyl == 0) {
-            cyl = 3;
-            sec = 32;
+            cyl = 2;
+            sec = 16;
             std::string create =
                 "C " + std::to_string(cyl) + " " + std::to_string(sec);
             std::cout << "Server has no disk. Creating with: " + create
@@ -86,9 +87,8 @@ int main(int argc, char* argv[]) {
         }
 
     } catch(const std::exception& e) {
-        std::cerr << "Client error on host " << host << ":" << port << ". "
+        std::cerr << "Server error on " << host << ":" << port << ". "
                   << e.what() << std::endl;
-        ;
     }
 
     client.stop();
