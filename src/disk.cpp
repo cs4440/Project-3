@@ -9,6 +9,7 @@ Disk::Disk(std::string name, std::size_t cyl, std::size_t sec)
       _bytes(_cylinders * _sectors * _sec_sz),
       _totalbytes(_bytes + sizeof(_cylinders) + sizeof(_sectors) +
                   sizeof(_sec_sz)),
+      _track_time(TRACK_TIME),
       _name(name),
       _fd(-1),
       _file(nullptr) {}
@@ -22,7 +23,13 @@ std::size_t Disk::cylinder() { return _cylinders; }
 
 std::size_t Disk::sector() { return _sectors; }
 
+std::size_t Disk::sector_size() { return _sec_sz; }
+
+std::size_t Disk::track_time() { return _track_time; }
+
 std::size_t Disk::bytes() { return _bytes; }
+
+std::size_t Disk::total_bytes() { return _totalbytes; }
 
 std::string Disk::name() { return _name; }
 
@@ -139,17 +146,22 @@ void Disk::set_sectors(std::size_t s) {
     if(!valid()) _sectors = s;
 }
 
-void Disk::set_sec_size(std::size_t s) {
+void Disk::set_sector_size(std::size_t s) {
     if(!valid()) _sec_sz = s;
 }
+
+void Disk::set_track_time(std::size_t t) { _track_time = t; }
 
 std::string Disk::read_at(std::size_t cyl, std::size_t sec) {
     if(cyl > _cylinders - 1 || sec > _sectors - 1)
         return "0";
-    else
+    else {
+        usleep(_track_time);
+
         return "1" +
                std::string(_file + (cyl * sec * _sec_sz) + (sec * _sec_sz),
                            SECTOR_SZ);
+    }
 }
 
 bool Disk::write_at(const char *buf, std::size_t cyl, std::size_t sec,
@@ -157,6 +169,8 @@ bool Disk::write_at(const char *buf, std::size_t cyl, std::size_t sec,
     if(cyl > _cylinders - 1 || sec > _sectors - 1 || bufsz > SECTOR_SZ)
         return false;
     else {
+        usleep(_track_time);
+
         strncpy(_file + (cyl * sec * _sec_sz) + (sec * _sec_sz), buf, bufsz);
         return true;
     }
@@ -167,6 +181,8 @@ bool Disk::write_at(char *buf, std::size_t cyl, std::size_t sec,
     if(cyl > _cylinders - 1 || sec > _sectors - 1 || bufsz > SECTOR_SZ)
         return false;
     else {
+        usleep(_track_time);
+
         strncpy(_file + (cyl * sec * _sec_sz) + (sec * _sec_sz), buf, bufsz);
         return true;
     }

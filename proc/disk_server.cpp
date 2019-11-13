@@ -4,6 +4,11 @@
 #include "../include/parser.h"  // Parser, get cli tokens with grammar
 #include "../include/socket.h"  // Socket class
 
+// GLOBALS
+int TRACK_TIME = 10;  // in microseconds
+int CYLINDERS = 5;    // default cylinders
+int SECTORS = 10;     // default sectors per cylinders
+
 void *connection_handler(void *socketfd);
 
 int main(int argc, char *argv[]) {
@@ -14,6 +19,9 @@ int main(int argc, char *argv[]) {
     pthread_attr_t attr;
 
     if(argc > 1) port = atoi(argv[1]);
+    if(argc > 2) TRACK_TIME = atoi(argv[2]);
+    if(argc > 3) CYLINDERS = atoi(argv[3]);
+    if(argc > 4) SECTORS = atoi(argv[4]);
 
     try {
         server.set_port(port);
@@ -53,7 +61,12 @@ void *connection_handler(void *socketfd) {
     Parser parser;
     std::vector<std::string> tokens;
     std::string diskfile = "client.disk";
-    fs::Disk disk(diskfile);
+
+    // create disk with default settings
+    fs::Disk disk(diskfile, CYLINDERS, SECTORS);
+    disk.set_track_time(TRACK_TIME);
+
+    std::cout << "track time " << disk.track_time() << std::endl;
 
     // static messages
     std::string welcome =
@@ -119,7 +132,7 @@ void *connection_handler(void *socketfd) {
 
                                 disk.set_cylinders(cyl);
                                 disk.set_sectors(sec);
-                                disk.set_sec_size(fs::Disk::SECTOR_SZ);
+                                disk.set_sector_size(fs::Disk::SECTOR_SZ);
                                 disk.create();
 
                                 sock::send_msg(

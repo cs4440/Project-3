@@ -8,7 +8,6 @@ std::string get_rand_disk_indices(int cyl, int sec);
 std::string get_rand_128bytes_data();
 
 int main(int argc, char* argv[]) {
-    bool exit = false;
     sock::Client client;
     int port = 8000, sockfd;
     std::string host = "localhost", line, server_msg;
@@ -45,6 +44,7 @@ int main(int argc, char* argv[]) {
         ss << server_msg;
         ss >> cyl >> sec;
 
+        // create disk if there is no disk
         if(cyl == 0) {
             cyl = 5;
             sec = 10;
@@ -57,19 +57,7 @@ int main(int argc, char* argv[]) {
         }
         std::cout << server_msg << std::endl;
 
-        // while(!exit) {
-        //     std::cout << "> ";
-        //     std::getline(std::cin, line);
-
-        //     if(line.size()) {
-        //         sock::send_msg(sockfd, line);
-        //         sock::read_msg(sockfd, server_msg);
-        //         std::cout << server_msg << std::endl;
-
-        //         if(line == "exit") break;
-        //     }
-        // }
-
+        // start num random requests
         srand(seed);
         int random = -1;
         std::string rand_msg, server_msg;

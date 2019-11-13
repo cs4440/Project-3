@@ -6,7 +6,7 @@
 #include <sys/mman.h>   // mmap()
 #include <sys/stat.h>   // path stat and constants
 #include <sys/types.h>  // unix types
-#include <unistd.h>     // open/write
+#include <unistd.h>     // open(), read(), write(), usleep()
 #include <cstring>      // strncpy()
 #include <stdexcept>    // std::exception
 #include <string>       // std::string
@@ -15,26 +15,33 @@ namespace fs {
 
 class Disk {
 public:
-    enum { BYTES = 4096, SECTOR_SZ = 128 };
+    enum {
+        SECTOR_SZ = 128,  // bytes
+        TRACK_TIME = 10   // microseconds
+    };
 
     Disk(std::string name, std::size_t cyl = 1, std::size_t sec = 32);
     ~Disk();
 
     std::size_t cylinder();
     std::size_t sector();
+    std::size_t sector_size();
+    std::size_t track_time();
     std::size_t bytes();
+    std::size_t total_bytes();
     std::string name();
     int fd();
     char* file();
     std::string geometry();  // return a string with disk geometry
     bool valid();
 
-    bool create();                      // create Disk
-    bool open_disk(std::string n);      // initialize Disk from existing file
-    bool remove_disk();                 // remove disk file from system
-    void set_cylinders(std::size_t c);  // set cylinders if valid
-    void set_sectors(std::size_t s);    // set sectors per cylinder if valid
-    void set_sec_size(std::size_t s);   // set sector size if valid
+    bool create();                        // create Disk
+    bool open_disk(std::string n);        // initialize Disk from existing file
+    bool remove_disk();                   // remove disk file from system
+    void set_cylinders(std::size_t c);    // set cylinders if valid
+    void set_sectors(std::size_t s);      // set sectors per cylinder if valid
+    void set_sector_size(std::size_t s);  // set sector size if valid
+    void set_track_time(std::size_t t);   // set sector size if valid
 
     // read at cylinder and sector index
     std::string read_at(std::size_t cyl, std::size_t sec);
@@ -50,6 +57,7 @@ private:
     std::size_t _sec_sz;      // number of bytes in a sector
     std::size_t _bytes;       // bytes of disk without geometry info
     std::size_t _totalbytes;  // total bytes with geometry info
+    std::size_t _track_time;
 
     std::string _name;  // disk name
     int _fd;            // file decriptor to physical file
