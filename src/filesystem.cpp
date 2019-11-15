@@ -16,7 +16,7 @@ std::ostream& FileSystem::print_entries(std::ostream& outs) const {
 }
 
 std::ostream& FileSystem::print_dirs(std::ostream& outs) const {
-    auto dirs = _cwd.back()->dirs();
+    auto dirs = _pwd.back()->dirs();
     for(auto it = dirs.begin(); it != dirs.end(); ++it)
         outs << it->first << std::endl;
 
@@ -24,18 +24,18 @@ std::ostream& FileSystem::print_dirs(std::ostream& outs) const {
 }
 
 std::ostream& FileSystem::print_files(std::ostream& outs) const {
-    auto files = _cwd.back()->files();
+    auto files = _pwd.back()->files();
     for(auto it = files.begin(); it != files.end(); ++it)
         outs << it->first << std::endl;
 
     return outs;
 }
 
-std::ostream& FileSystem::print_cwd(std::ostream& outs) const {
-    if(_cwd.size() == 1)
-        outs << _cwd.front()->name();
+std::ostream& FileSystem::print_pwd(std::ostream& outs) const {
+    if(_pwd.size() == 1)
+        outs << _pwd.front()->name();
     else
-        for(auto it = ++_cwd.begin(); it != _cwd.end(); ++it)
+        for(auto it = ++_pwd.begin(); it != _pwd.end(); ++it)
             outs << '/' << (*it)->name();
 
     return outs;
@@ -49,7 +49,7 @@ std::size_t FileSystem::files_size() const { return current()->files_size(); }
 
 std::size_t FileSystem::size() const { return current()->size(); }
 
-Directory* FileSystem::current() const { return _cwd.back(); }
+Directory* FileSystem::current() const { return _pwd.back(); }
 
 Directory* FileSystem::root() const { return _root; }
 
@@ -71,14 +71,14 @@ File* FileSystem::find_file(std::string n) const {
 
 void FileSystem::init() {
     _root = new Directory("/");
-    _cwd.push_back(_root);
+    _pwd.push_back(_root);
 }
 
-// if path is invalid, _cwd is not changed
+// if path is invalid, _pwd is not changed
 bool FileSystem::change_dir(std::string path) {
     bool success = true;
     Directory* find = nullptr;
-    std::list<Directory*> cwd = _cwd;
+    std::list<Directory*> cwd = _pwd;
     std::queue<std::string> entries;
     std::string entry;
 
@@ -108,7 +108,7 @@ bool FileSystem::change_dir(std::string path) {
         }
     }
 
-    if(success) _cwd = cwd;
+    if(success) _pwd = cwd;
 
     return success;
 }

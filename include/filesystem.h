@@ -28,7 +28,7 @@ public:
     std::ostream& print_entries(std::ostream& outs = std::cout) const;
     std::ostream& print_dirs(std::ostream& outs = std::cout) const;
     std::ostream& print_files(std::ostream& outs = std::cout) const;
-    std::ostream& print_cwd(std::ostream& outs = std::cout) const;
+    std::ostream& print_pwd(std::ostream& outs = std::cout) const;
 
     bool empty() const;
     std::size_t dirs_size() const;
@@ -56,11 +56,11 @@ public:
 
     // FRIENDS
     friend std::ostream& operator<<(std::ostream& outs, const FileSystem& fs) {
-        return fs.print_cwd(outs);  // return output
+        return fs.print_pwd(outs);  // return output
     }
 
 private:
-    std::list<Directory*> _cwd;
+    std::list<Directory*> _pwd;
     Directory* _root;  // never be changed after init
 
     // convert a path string to queue of entry

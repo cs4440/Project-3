@@ -11,7 +11,7 @@ TESTDIR         := tests
 TESTS           := test
 UTILS           := utils.o
 PARSER          := state_machine.o token.o tokenizer.o parser.o
-FS              := entry.o file.o directory.o filesystem.o disk.o
+FS              := disk.o fat.o entry.o file.o directory.o filesystem.o
 SOCKET          := socket.o
 ALL             := basic_client basic_server\
                    dir_listing_client dir_listing_server\
@@ -100,6 +100,10 @@ disk.o: ${SRC}/disk.cpp\
 	${INC}/disk.h
 	$(CXX) $(CXXFLAGS) -c $<
 
+fat.o: ${SRC}/fat.cpp\
+	${INC}/fat.h
+	$(CXX) $(CXXFLAGS) -c $<
+
 entry.o: ${SRC}/entry.cpp\
 	${INC}/entry.h
 	$(CXX) $(CXXFLAGS) -c $<
@@ -119,7 +123,7 @@ filesystem.o: ${SRC}/filesystem.cpp\
 # TESTS
 tests: $(TESTS)
 
-test: test.o $(PARSER)
+test: test.o $(FS)
 	$(CXX) -o $@ $^
 
 test.o: $(TESTDIR)/test.cpp

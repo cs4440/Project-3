@@ -16,24 +16,29 @@ namespace fs {
 class Disk {
 public:
     enum {
-        BLOCK_SZ = 128,   // bytes in a sector
+        MAX_BLOCK = 128,  // bytes in a sector
         TRACK_TIME = 100  // microseconds
     };
 
     Disk(std::string name, std::size_t cyl = 1, std::size_t sec = 32);
     ~Disk();
 
-    std::size_t cylinder();
-    std::size_t sector();
-    std::size_t block();
-    std::size_t track_time();
-    std::size_t logical_bytes();
-    std::size_t physical_bytes();
-    std::string name();
-    std::string geometry();  // return a string with disk geometry
+    bool valid() const;
+    std::size_t cylinder() const;
+    std::size_t sector() const;
+    std::size_t max_block() const;
+    std::size_t track_time() const;
+    std::size_t logical_bytes() const;
+    std::size_t physical_bytes() const;
+    std::string name() const;
+    std::size_t block(std::size_t cyl, std::size_t sec) const;
+    std::size_t total_blocks() const;
+    std::size_t location(std::size_t cyl, std::size_t sec) const;
+    std::size_t location(std::size_t block) const;
+    std::string geometry() const;  // return a string with disk geometry
     int fd();
     char* file();
-    bool valid();
+    char* file_at(int block);
 
     bool create();                       // create Disk
     bool open_disk(std::string n);       // initialize Disk from existing file
@@ -47,14 +52,14 @@ public:
     std::string read_at(std::size_t cyl, std::size_t sec);
     // write str of _sec_sz
     bool write_at(const char* buf, std::size_t cyl, std::size_t sec,
-                  std::size_t bufsz = BLOCK_SZ);
+                  std::size_t bufsz = MAX_BLOCK);
     bool write_at(char* buf, std::size_t cyl, std::size_t sec,
-                  std::size_t bufsz = BLOCK_SZ);
+                  std::size_t bufsz = MAX_BLOCK);
 
 private:
     std::size_t _cylinders;       // number of cyclinders
     std::size_t _sectors;         // number of sectors per cylinder
-    std::size_t _block;           // number of bytes in a sector
+    std::size_t _max_block;       // number of bytes in a sector
     std::size_t _offset;          // offset to read real data
     std::size_t _logical_bytes;   // bytes of disk without geometry info
     std::size_t _physical_bytes;  // total bytes with geometry info
@@ -67,6 +72,40 @@ private:
 
     void _close_fd();    // close file descriptor
     void _unmap_file();  // unmap virtual memory from file
+};
+
+struct DiskCoord {
+    int cylinder;
+    int sector;
+    int block;
+
+    // CONSTRUCTOR
+    DiskCoord(int c, int s, int b = Disk::MAX_BLOCK)
+        : cylinder(c), sector(s), block(b) {}
+
+    friend bool operator==(const DiskCoord& lhs, const DiskCoord& rhs) {
+        return lhs.cylinder == rhs.cylinder && lhs.sector == rhs.sector;
+    }
+
+    friend bool operator!=(const DiskCoord& lhs, const DiskCoord& rhs) {
+        return lhs.cylinder != rhs.cylinder || lhs.sector != rhs.sector;
+    }
+
+    friend bool operator<(const DiskCoord& lhs, const DiskCoord& rhs) {
+        return lhs.cylinder < rhs.cylinder && lhs.sector < rhs.sector;
+    }
+
+    friend bool operator<=(const DiskCoord& lhs, const DiskCoord& rhs) {
+        return lhs.cylinder <= rhs.cylinder && lhs.sector <= rhs.sector;
+    }
+
+    friend bool operator>(const DiskCoord& lhs, const DiskCoord& rhs) {
+        return lhs.cylinder > rhs.cylinder && lhs.sector > rhs.sector;
+    }
+
+    friend bool operator>=(const DiskCoord& lhs, const DiskCoord& rhs) {
+        return lhs.cylinder >= rhs.cylinder && lhs.sector >= rhs.sector;
+    }
 };
 
 }  // namespace fs
