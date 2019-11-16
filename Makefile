@@ -11,7 +11,7 @@ TESTDIR         := tests
 TESTS           := test
 UTILS           := utils.o
 PARSER          := state_machine.o token.o tokenizer.o parser.o
-FS              := disk.o fat.o entry.o file.o directory.o filesystem.o
+FS              := disk.o fat.o
 SOCKET          := socket.o
 ALL             := basic_client basic_server\
                    dir_listing_client dir_listing_server\

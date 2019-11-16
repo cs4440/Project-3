@@ -9,14 +9,15 @@
 #include <unistd.h>     // open
 #include <cstring>      // strncpy(), memset()
 #include <ctime>        // ctime(), time_t
-#include <iostream>
-#include <stdexcept>  // exception
-#include <string>     // string
-#include "disk.h"     // Disk class
+#include <iostream>     // stream
+#include <queue>        // queue
+#include <stdexcept>    // exception
+#include <string>       // string
+#include "disk.h"       // Disk class
 
 namespace fs {
 
-enum ENTRY { DIR = 0, FILE = 1, ENDBLOCK = -1 };
+enum ENTRY { DIR = 0, FILE = 1, ENDBLOCK = -1, MAX_NAME = 86 };
 
 /*******************************************************************************
  * Class to representation of a cell in File Allocation Table (FAT).
@@ -41,8 +42,10 @@ struct FatCell {
     int* _block;
 
     // CONSTRUCTOR
-    FatCell(int* address) : _cell(address), _block(address + 1) {}
+    FatCell(int* address = nullptr) : _cell(address), _block(address + 1) {}
 
+    bool valid() const { return _cell != nullptr; }
+    bool has_next() const { return _cell != nullptr && *_cell > END; }
     bool free() const { return *_cell == FREE; }
     bool end() const { return *_cell == END; }
 
@@ -82,9 +85,9 @@ struct FatCell {
 /*******************************************************************************
  * Class to representation of a Directory Entry in a disk block.
  *
- * Structure of a cell
- * |   name   | valid | type | dot | dotdot | dir cell | file cell | times...
- *   MAX_NAME   bool    bool   int    int       int         int      time_t
+ * Structure of Entry
+ * |   name   | valid | type | dot | dotdot | dir ptr | file ptr | times...
+ *   MAX_NAME   bool    bool   int    int       int       int      time_t
  *
  * Default values when constructed with valid address:
  * name: null bytes
@@ -92,26 +95,23 @@ struct FatCell {
  * type: ENTRY:DIR
  * dot:  ENTRY::ENDBLOCK
  * dotdot: ENTRY:ENDBLOCK
- * dir_cell: ENTRY:ENDBLOCK
- * file_cell: ENTRY:ENDBLOCK
+ * dircell_index: ENTRY:ENDBLOCK
+ * filecell_index: ENTRY:ENDBLOCK
  * created: current time
  * last_accessed: current time
- * last_updated: current time
- * 0 >= next cell #
+ * last_modified: current time
  ******************************************************************************/
 struct DirEntry {
-    enum { MAX_NAME = 86 };
-
     char* _name;
     bool* _valid;
     bool* _type;
     int* _dot;
     int* _dotdot;
-    int* _dir_cell;
-    int* _file_cell;
+    int* _dircell_index;
+    int* _filecell_index;
     time_t* _created;
     time_t* _last_accessed;
-    time_t* _last_updated;
+    time_t* _last_modified;
 
     DirEntry(char* address = nullptr) { _reset_address(address); }
 
@@ -120,11 +120,14 @@ struct DirEntry {
     bool type() const { return *_type; }
     int dot() const { return *_dot; }
     int dotdot() const { return *_dotdot; }
-    int dircell() const { return *_dir_cell; }
-    int filecell() const { return *_file_cell; }
+    int dircell_index() const { return *_dircell_index; }
+    int filecell_index() const { return *_filecell_index; }
     time_t created() const { return *_created; }
     time_t last_accessed() const { return *_last_accessed; }
-    time_t last_updated() const { return *_last_updated; }
+    time_t last_modified() const { return *_last_modified; }
+
+    bool has_dirs() const { return dircell_index() != ENTRY::ENDBLOCK; }
+    bool has_files() const { return filecell_index() != ENTRY::ENDBLOCK; }
 
     // set address if DirEntry was not created with valid address
     void set_address(char* address) { _reset_address(address); }
@@ -137,11 +140,11 @@ struct DirEntry {
         set_type(ENTRY::DIR);
         set_dot(ENTRY::ENDBLOCK);
         set_dotdot(ENTRY::ENDBLOCK);
-        set_dircell(ENTRY::ENDBLOCK);
-        set_filecell(ENTRY::ENDBLOCK);
+        set_dircell_index(ENTRY::ENDBLOCK);
+        set_filecell_index(ENTRY::ENDBLOCK);
         update_created();
         update_last_accessed();
-        update_last_updated();
+        update_last_modified();
     }
 
     void set_name(std::string name) {
@@ -156,14 +159,14 @@ struct DirEntry {
     void set_type(bool type) { *_type = type; }
     void set_dot(int block) { *_dot = block; }
     void set_dotdot(int block) { *_dotdot = block; }
-    void set_dircell(int cell) { *_dir_cell = cell; }
-    void set_filecell(int cell) { *_file_cell = cell; }
+    void set_dircell_index(int cell) { *_dircell_index = cell; }
+    void set_filecell_index(int cell) { *_filecell_index = cell; }
     void set_created(time_t t) { *_created = t; }
     void update_created() { *_created = std::time(_created); }
     void set_last_accessed(time_t t) { *_last_accessed = t; }
     void update_last_accessed() { *_last_accessed = std::time(_last_accessed); }
-    void set_last_updated(time_t t) { *_last_updated = t; }
-    void update_last_updated() { *_last_updated = std::time(_last_updated); }
+    void set_last_modified(time_t t) { *_last_modified = t; }
+    void update_last_modified() { *_last_modified = std::time(_last_modified); }
 
     void _reset_address(char* address) {
         if(address) {
@@ -172,11 +175,97 @@ struct DirEntry {
             _type = _valid + 1;
             _dot = (int*)(_type + 1);
             _dotdot = _dot + 1;
-            _dir_cell = _dotdot + 1;
-            _file_cell = _dir_cell + 1;
-            _created = (time_t*)(_file_cell + 1);
+            _dircell_index = _dotdot + 1;
+            _filecell_index = _dircell_index + 1;
+            _created = (time_t*)(_filecell_index + 1);
             _last_accessed = _created + 1;
-            _last_updated = _last_accessed + 1;
+            _last_modified = _last_accessed + 1;
+        }
+    }
+};
+
+/*******************************************************************************
+ * Class to representation of a Directory Entry in a disk block.
+ *
+ * Structure of Entry
+ * |   name   | valid | type | data ptr | times...
+ *   MAX_NAME   bool    bool      int     time_t
+ *
+ * Default values when constructed with valid address:
+ * name: null bytes
+ * valid: true
+ * type: ENTRY:DIR
+ * dot:  ENTRY::ENDBLOCK
+ * dotdot: ENTRY:ENDBLOCK
+ * dir_cell: ENTRY:ENDBLOCK
+ * file_cell: ENTRY:ENDBLOCK
+ * created: current time
+ * last_accessed: current time
+ * last_modified: current time
+ ******************************************************************************/
+struct FileEntry {
+    char* _name;
+    bool* _valid;
+    bool* _type;
+    int* _datacell_index;
+    time_t* _created;
+    time_t* _last_accessed;
+    time_t* _last_modified;
+
+    FileEntry(char* address = nullptr) { _reset_address(address); }
+
+    std::string name() const { return std::string(_name, MAX_NAME); }
+    bool valid() const { return *_valid; }
+    bool type() const { return *_type; }
+    int datacell_index() const { return *_datacell_index; }
+    time_t created() const { return *_created; }
+    time_t last_accessed() const { return *_last_accessed; }
+    time_t last_modified() const { return *_last_modified; }
+
+    bool has_data() const { return datacell_index() != ENTRY::ENDBLOCK; }
+
+    // set address if FileEntry was not created with valid address
+    void set_address(char* address) { _reset_address(address); }
+
+    // clear and initialize all fields to default values
+    // WARNING: will delete existing data!
+    void init() {
+        memset(_name, 0, MAX_NAME);
+        set_valid(true);
+        set_type(ENTRY::FILE);
+        set_datacell_index(ENTRY::ENDBLOCK);
+        update_created();
+        update_last_accessed();
+        update_last_modified();
+    }
+
+    void set_name(std::string name) {
+        if(name.size() > MAX_NAME)
+            throw std::range_error("File name size exceeded");
+
+        memset(_name, 0, MAX_NAME);
+        strncpy(_name, name.c_str(), name.size());
+    }
+
+    void set_valid(bool valid) { *_valid = valid; }
+    void set_type(bool type) { *_type = type; }
+    void set_datacell_index(int cell) { *_datacell_index = cell; }
+    void set_created(time_t t) { *_created = t; }
+    void update_created() { *_created = std::time(_created); }
+    void set_last_accessed(time_t t) { *_last_accessed = t; }
+    void update_last_accessed() { *_last_accessed = std::time(_last_accessed); }
+    void set_last_modified(time_t t) { *_last_modified = t; }
+    void update_last_modified() { *_last_modified = std::time(_last_modified); }
+
+    void _reset_address(char* address) {
+        if(address) {
+            _name = address;
+            _valid = (bool*)(_name + MAX_NAME);
+            _type = _valid + 1;
+            _datacell_index = (int*)(_type + 1);
+            _created = (time_t*)(_datacell_index + 1);
+            _last_accessed = _created + 1;
+            _last_modified = _last_accessed + 1;
         }
     }
 };
@@ -191,7 +280,7 @@ public:
     Fat(std::string name, int cells);
     ~Fat();
 
-    bool create();                    // create FAT table on fisk
+    bool create();                    // create FAT table on disk
     bool open_fat(std::string name);  // load existing FAT table
     bool remove_fat();  // remove FAT table and invalidate instance
 
@@ -226,8 +315,14 @@ class FatFS {
 public:
     FatFS(std::string name, std::size_t cylinders, std::size_t sectors);
 
+    std::size_t size() const;  // size of FS in bytes
+    void print_dirs();         // print directories at current dir
+    void print_files();        // print files at current dir
+
     // WARNING Will delete both disk and fat file!
     void remove_filesystem();
+    bool add_dir(std::string name);   // add directory at current dir
+    bool add_file(std::string name);  // add file at current dir
 
 private:
     std::string _name;      // name of Fat file system
@@ -235,9 +330,18 @@ private:
     std::string _fatname;   // name of physical fat file
     Disk _disk;             // physical disk
     Fat _fat;               // FAT table
-    DirEntry _root;
+    DirEntry _root;         // root directory entry
+    DirEntry _current;      // current directory entry
+    std::queue<int> _free;  // queue of free cells -> free blocks
 
     void _init_root();
+    void _init_free();
+
+    // return by ref a list of subdirectory blocks at given disk block
+    void _dirs_at(int start_block, std::queue<int>& entry_blocks);
+    void _files_at(int start_block, std::queue<int>& entry_blocks);
+    FatCell _last_cell_from_block(int start_block);
+    FatCell _last_cell_from_cell(int start_cell);
 };
 
 }  // namespace fs
