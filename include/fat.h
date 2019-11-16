@@ -101,21 +101,17 @@ struct FatCell {
  * last_accessed: current time
  * last_modified: current time
  ******************************************************************************/
-struct DirEntry {
-    char* _name;
-    bool* _valid;
-    bool* _type;
-    int* _dot;
-    int* _dotdot;
-    int* _dircell_index;
-    int* _filecell_index;
-    time_t* _created;
-    time_t* _last_accessed;
-    time_t* _last_modified;
-
+class DirEntry {
+public:
     DirEntry(char* address = nullptr) { _reset_address(address); }
 
-    std::string name() const { return std::string(_name, MAX_NAME); }
+    bool has_dirs() const { return dircell_index() != ENTRY::ENDBLOCK; }
+    bool has_files() const { return filecell_index() != ENTRY::ENDBLOCK; }
+    bool is_valid() const { return _name != nullptr; }
+    operator bool() const { return _name != nullptr; }  // explicit bool conv
+    void clear() { _reset_address(nullptr); };
+
+    std::string name() const { return std::string(_name); }
     bool valid() const { return *_valid; }
     bool type() const { return *_type; }
     int dot() const { return *_dot; }
@@ -125,9 +121,6 @@ struct DirEntry {
     time_t created() const { return *_created; }
     time_t last_accessed() const { return *_last_accessed; }
     time_t last_modified() const { return *_last_modified; }
-
-    bool has_dirs() const { return dircell_index() != ENTRY::ENDBLOCK; }
-    bool has_files() const { return filecell_index() != ENTRY::ENDBLOCK; }
 
     // set address if DirEntry was not created with valid address
     void set_address(char* address) { _reset_address(address); }
@@ -169,19 +162,29 @@ struct DirEntry {
     void update_last_modified() { *_last_modified = std::time(_last_modified); }
 
     void _reset_address(char* address) {
-        if(address) {
-            _name = address;
-            _valid = (bool*)(_name + MAX_NAME);
-            _type = _valid + 1;
-            _dot = (int*)(_type + 1);
-            _dotdot = _dot + 1;
-            _dircell_index = _dotdot + 1;
-            _filecell_index = _dircell_index + 1;
-            _created = (time_t*)(_filecell_index + 1);
-            _last_accessed = _created + 1;
-            _last_modified = _last_accessed + 1;
-        }
+        _name = address;
+        _valid = (bool*)(_name + MAX_NAME);
+        _type = _valid + 1;
+        _dot = (int*)(_type + 1);
+        _dotdot = _dot + 1;
+        _dircell_index = _dotdot + 1;
+        _filecell_index = _dircell_index + 1;
+        _created = (time_t*)(_filecell_index + 1);
+        _last_accessed = _created + 1;
+        _last_modified = _last_accessed + 1;
     }
+
+private:
+    char* _name;
+    bool* _valid;
+    bool* _type;
+    int* _dot;
+    int* _dotdot;
+    int* _dircell_index;
+    int* _filecell_index;
+    time_t* _created;
+    time_t* _last_accessed;
+    time_t* _last_modified;
 };
 
 /*******************************************************************************
@@ -203,26 +206,21 @@ struct DirEntry {
  * last_accessed: current time
  * last_modified: current time
  ******************************************************************************/
-struct FileEntry {
-    char* _name;
-    bool* _valid;
-    bool* _type;
-    int* _datacell_index;
-    time_t* _created;
-    time_t* _last_accessed;
-    time_t* _last_modified;
-
+class FileEntry {
+public:
     FileEntry(char* address = nullptr) { _reset_address(address); }
 
-    std::string name() const { return std::string(_name, MAX_NAME); }
+    bool has_data() const { return datacell_index() != ENTRY::ENDBLOCK; }
+    bool is_valid() const { return _name != nullptr; }
+    operator bool() const { return _name != nullptr; }  // explicit bool conv
+
+    std::string name() const { return std::string(_name); }
     bool valid() const { return *_valid; }
     bool type() const { return *_type; }
     int datacell_index() const { return *_datacell_index; }
     time_t created() const { return *_created; }
     time_t last_accessed() const { return *_last_accessed; }
     time_t last_modified() const { return *_last_modified; }
-
-    bool has_data() const { return datacell_index() != ENTRY::ENDBLOCK; }
 
     // set address if FileEntry was not created with valid address
     void set_address(char* address) { _reset_address(address); }
@@ -258,16 +256,23 @@ struct FileEntry {
     void update_last_modified() { *_last_modified = std::time(_last_modified); }
 
     void _reset_address(char* address) {
-        if(address) {
-            _name = address;
-            _valid = (bool*)(_name + MAX_NAME);
-            _type = _valid + 1;
-            _datacell_index = (int*)(_type + 1);
-            _created = (time_t*)(_datacell_index + 1);
-            _last_accessed = _created + 1;
-            _last_modified = _last_accessed + 1;
-        }
+        _name = address;
+        _valid = (bool*)(_name + MAX_NAME);
+        _type = _valid + 1;
+        _datacell_index = (int*)(_type + 1);
+        _created = (time_t*)(_datacell_index + 1);
+        _last_accessed = _created + 1;
+        _last_modified = _last_accessed + 1;
     }
+
+private:
+    char* _name;
+    bool* _valid;
+    bool* _type;
+    int* _datacell_index;
+    time_t* _created;
+    time_t* _last_accessed;
+    time_t* _last_modified;
 };
 
 /*******************************************************************************
@@ -316,13 +321,17 @@ public:
     FatFS(std::string name, std::size_t cylinders, std::size_t sectors);
 
     std::size_t size() const;  // size of FS in bytes
+    DirEntry current() const;  // return current directory entry
     void print_dirs();         // print directories at current dir
     void print_files();        // print files at current dir
 
     // WARNING Will delete both disk and fat file!
     void remove_filesystem();
-    bool add_dir(std::string name);   // add directory at current dir
-    bool add_file(std::string name);  // add file at current dir
+
+    DirEntry add_dir(std::string name);     // add directory at current dir
+    FileEntry add_file(std::string name);   // add file at current dir
+    bool change_dir(std::string name);      // change current directory
+    FileEntry find_file(std::string name);  // get file entry at current dir
 
 private:
     std::string _name;      // name of Fat file system
@@ -340,6 +349,8 @@ private:
     // return by ref a list of subdirectory blocks at given disk block
     void _dirs_at(int start_block, std::queue<int>& entry_blocks);
     void _files_at(int start_block, std::queue<int>& entry_blocks);
+    DirEntry _find_dir_at(int start_block, std::string name);
+    FileEntry _find_file_at(int start_block, std::string name);
     FatCell _last_cell_from_block(int start_block);
     FatCell _last_cell_from_cell(int start_cell);
 };
