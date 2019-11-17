@@ -328,10 +328,14 @@ public:
     // WARNING Will delete both disk and fat file!
     void remove_filesystem();
 
-    DirEntry add_dir(std::string name);     // add directory at current dir
-    FileEntry add_file(std::string name);   // add file at current dir
+    DirEntry add_dir(std::string name);     // add directory entry @ current dir
+    FileEntry add_file(std::string name);   // add file entry @ current dir
+    void delete_dir(std::string name);      // delete dir entry @ current dir
+    void delete_file(std::string name);     // delete file entry @ current dir
     bool change_dir(std::string name);      // change current directory
-    FileEntry find_file(std::string name);  // get file entry at current dir
+    FileEntry find_file(std::string name);  // get file entry @ current dir
+    // add and overwrite data to file entry
+    bool write_file_data(FileEntry& file_entry, char* data, std::size_t size);
 
 private:
     std::string _name;      // name of Fat file system
@@ -347,11 +351,26 @@ private:
     void _init_free();
 
     // return by ref a list of subdirectory blocks at given disk block
-    void _dirs_at(int start_block, std::queue<int>& entry_blocks);
-    void _files_at(int start_block, std::queue<int>& entry_blocks);
-    DirEntry _find_dir_at(int start_block, std::string name);
-    FileEntry _find_file_at(int start_block, std::string name);
-    FatCell _last_cell_from_block(int start_block);
+    // start_block is the block number referring to the Entry
+    void _dirs_at(DirEntry& dir_entry, std::queue<int>& entry_blocks);
+    void _files_at(DirEntry& dir_entry, std::queue<int>& entry_blocks);
+    DirEntry _find_dir_at(DirEntry& dir_entry, std::string name);
+    FileEntry _find_file_at(DirEntry& dir_entry, std::string name);
+
+    // delete directory of a specificed name
+    void _delete_dir_at_dir(DirEntry& dir_entry, std::string name);
+    void _delete_file_at_dir(DirEntry& dir_entry, std::string name);
+
+    // recursively delete target directory entry and its subdirectories/files
+    void _delete_dir(DirEntry& dir_entry);
+
+    // mark given FatCell as free and push to free list
+    void _free_cell_and_block(FatCell& cell);
+
+    // get last cell from entry
+    FatCell _last_dircell_from_dir_entry(DirEntry& dir_entry);
+    FatCell _last_filecell_from_dir_entry(DirEntry& dir_entry);
+    FatCell _last_datacell_from_file_entry(FileEntry& file_entry);
     FatCell _last_cell_from_cell(int start_cell);
 };
 
