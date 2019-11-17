@@ -58,7 +58,7 @@ int main() {
     fatfs.print_files();
     std::cout << "-------------------" << std::endl;
 
-    dirname = "Dir1 at root";
+    dirname = "Dir2 at root";
     std::cout << "\nCD into: " << dirname << std::endl;
     fatfs.change_dir(dirname);
 
@@ -147,7 +147,7 @@ int main() {
     fatfs.print_files();
     std::cout << "-------------------" << std::endl;
 
-    dirname = "Dir1 at root";
+    dirname = "Dir2 at root";
     std::cout << "\nDeleting: " << dirname << std::endl;
     fatfs.delete_dir(dirname);
 
@@ -160,7 +160,7 @@ int main() {
     fatfs.print_files();
     std::cout << "-------------------" << std::endl;
 
-    dirname = "Dir2 at root";
+    dirname = "Dir1 at root";
     std::cout << "\nDeleting: " << dirname << std::endl;
     fatfs.delete_dir(dirname);
 

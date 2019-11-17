@@ -313,6 +313,8 @@ bool FatFS::change_dir(std::string name) {
 
     if(find) {
         _current = find;
+        _current.update_last_accessed();
+
         return true;
     } else
         return false;
@@ -469,9 +471,10 @@ void FatFS::_delete_dir_at_dir(DirEntry &dir_entry, std::string name) {
 
         // found @ first link, popfront
         if(dir.name() == name) {
+            dir_entry.update_last_modified();
             dir_entry.set_dircell_index(dircell.cell());
-            _free_cell_and_block(dircell);
 
+            _free_cell_and_block(dircell);
             _delete_dir(dir);  // recursively delete directory
         }
         // found @ rest of link
@@ -482,9 +485,14 @@ void FatFS::_delete_dir_at_dir(DirEntry &dir_entry, std::string name) {
                 dir = DirEntry(_disk.file_at(dircell.block()));
 
                 if(dir.name() == name) {
+                    dir_entry.update_last_modified();
+
                     // link previous cell to next cell
                     prevcell.set_cell(dircell.cell());
+
                     _free_cell_and_block(dircell);
+                    _delete_dir(dir);  // recursively delete directory
+
                     break;
                 }
             }
@@ -502,6 +510,7 @@ void FatFS::_delete_file_at_dir(DirEntry &dir_entry, std::string name) {
 
         // found @ first link, popfront
         if(file.name() == name) {
+            dir_entry.update_last_modified();
             dir_entry.set_filecell_index(filecell.cell());
             _free_cell_and_block(filecell);
         }
@@ -513,9 +522,12 @@ void FatFS::_delete_file_at_dir(DirEntry &dir_entry, std::string name) {
                 file = FileEntry(_disk.file_at(filecell.block()));
 
                 if(file.name() == name) {
+                    dir_entry.update_last_modified();
+
                     // link previous cell to next cell
                     prevcell.set_cell(filecell.cell());
                     _free_cell_and_block(filecell);
+
                     break;
                 }
             }
