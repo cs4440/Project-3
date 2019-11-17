@@ -179,17 +179,19 @@ std::size_t FatFS::size() const {
     return (_disk.total_blocks() - _free.size()) * _disk.max_block();
 }
 
+std::size_t FatFS::free_space() const { return _free.size() * Disk::MAX_BLOCK; }
+
 DirEntry FatFS::current() const { return _current; }
 
 void FatFS::print_dirs() {
     int block = -1;
-    std::queue<int> dir_entry_blocks;
+    std::stack<int> dir_entry_blocks;
 
     // get a queue of disk blocks for subdirectories
     _dirs_at(_current, dir_entry_blocks);
 
     while(!dir_entry_blocks.empty()) {
-        block = dir_entry_blocks.front();
+        block = dir_entry_blocks.top();
         dir_entry_blocks.pop();
 
         DirEntry dir = DirEntry(_disk.file_at(block));
@@ -199,13 +201,13 @@ void FatFS::print_dirs() {
 
 void FatFS::print_files() {
     int block = -1;
-    std::queue<int> file_entry_blocks;
+    std::stack<int> file_entry_blocks;
 
     // get a queue of disk blocks for subdirectories
     _files_at(_current, file_entry_blocks);
 
     while(!file_entry_blocks.empty()) {
-        block = file_entry_blocks.front();
+        block = file_entry_blocks.top();
         file_entry_blocks.pop();
 
         FileEntry file = FileEntry(_disk.file_at(block));
@@ -231,8 +233,8 @@ DirEntry FatFS::add_dir(std::string name) {
     // check if there's free fat cell
     if(!found && _free.size()) {
         // get a new index from free index list
-        int new_index = _free.front();  // get a free cell index
-        _free.pop();                    // remove cell index
+        int new_index = _free.top();  // get a free cell index
+        _free.pop();                  // remove cell index
 
         // get a new cell from free index
         FatCell newcell = _fat.get_cell(new_index);
@@ -274,8 +276,8 @@ FileEntry FatFS::add_file(std::string name) {
     // check if there's free fat cell
     if(!found && _free.size()) {
         // get a new index from free index list
-        int new_index = _free.front();  // get a free cell index
-        _free.pop();                    // remove cell index
+        int new_index = _free.top();  // get a free cell index
+        _free.pop();                  // remove cell index
 
         // get a new cell from free index
         FatCell newcell = _fat.get_cell(new_index);
@@ -324,6 +326,112 @@ FileEntry FatFS::find_file(std::string name) {
     return _find_file_at(_current, name);
 }
 
+std::size_t FatFS::read_file_data(FileEntry &file_entry, char *data,
+                                  std::size_t size) {
+    std::size_t bytes = 0;
+    FatCell datacell;
+    DataEntry data_entry;
+
+    file_entry.update_last_accessed();
+
+    if(file_entry.has_data()) {
+        // get first data entry from file entry data pointer
+        datacell = _fat.get_cell(file_entry.datacell_index());
+        data_entry = _disk.file_at(datacell.block());
+        bytes = data_entry.read(data, size);
+
+        // read the rest of the data entry links
+        while(datacell.has_next()) {
+            datacell = _fat.get_cell(datacell.cell());
+            data_entry = _disk.file_at(datacell.block());
+            bytes += data_entry.read(data + bytes, size);
+        }
+
+        return bytes;
+    } else
+        return 0;
+}
+
+std::size_t FatFS::write_file_data(FileEntry &file_entry, const char *data,
+                                   std::size_t size) {
+    int freeindex, bytes_to_write = size;
+    std::size_t bytes = 0;
+    FatCell freecell, prevcell;
+    DataEntry data_entry;
+
+    // check if file system have enough space for new data
+    if(size > (this->free_space() + file_entry.data_blocks() * Disk::MAX_BLOCK))
+        return bytes;
+    else {
+        // update file entry timestamps
+        file_entry.update_last_accessed();
+        file_entry.update_last_modified();
+
+        // free all associated data blocks before writing
+        _free_file_data_blocks(file_entry);
+
+        // write first block of data and connect to file_entry's data pointer
+
+        // get a free cell to start writing
+        freeindex = _free.top();
+        _free.pop();
+        freecell = _fat.get_cell(freeindex);
+        freecell.set_cell(FatCell::END);
+        freecell.set_block(freeindex);
+
+        // connect file_entry'd data pointer to freeindex
+        file_entry.set_datacell_index(freeindex);
+
+        // get DataEntr with freecell's block pointer
+        data_entry = _disk.file_at(freecell.block());
+
+        if(bytes_to_write < Disk::MAX_BLOCK) {
+            bytes = data_entry.write(data, bytes_to_write);
+            bytes_to_write -= bytes_to_write;
+        } else {
+            bytes = data_entry.write(data, bytes_to_write);
+            bytes_to_write -= Disk::MAX_BLOCK;
+        }
+
+        // write rest of data to data links
+        while(bytes_to_write > 0) {
+            // store previous cell
+            prevcell = freecell;
+
+            // get a free cell to start writing
+            freeindex = _free.top();
+            _free.pop();
+            freecell = _fat.get_cell(freeindex);
+            freecell.set_cell(FatCell::END);
+            freecell.set_block(freeindex);
+
+            // connect previous cell to freeindex
+            prevcell.set_cell(freeindex);
+
+            // get DataEntr with freecell's block pointer
+            data_entry = _disk.file_at(freecell.block());
+
+            if(bytes_to_write < Disk::MAX_BLOCK) {
+                bytes += data_entry.write(data + bytes, bytes_to_write);
+                bytes_to_write -= bytes_to_write;
+            } else {
+                bytes += data_entry.write(data + bytes, bytes_to_write);
+                bytes_to_write -= Disk::MAX_BLOCK;
+            }
+        }
+
+        file_entry.set_size(size);  // update file entry size for data
+
+        return bytes;
+    }
+}
+
+void FatFS::remove_file_data(FileEntry &file_entry) {
+    file_entry.update_last_accessed();
+    file_entry.update_last_modified();
+    _free_file_data_blocks(file_entry);
+}
+
 void FatFS::_init_root() {
     // get fat cell #0
     FatCell root_cell = _fat.get_cell(0);
@@ -345,17 +453,10 @@ void FatFS::_init_root() {
     _current = _root;
 }
 
-bool FatFS::write_file_data(FileEntry &file_entry, char *data,
-                            std::size_t size) {
-    // delete all data blocks associaed with file entry
-
-    return true;
-}
-
 void FatFS::_init_free() {
     FatCell fatcell;
 
-    for(std::size_t i = 0; i < _fat.size(); ++i) {
+    for(int i = (int)_fat.size() - 1; i >= 0; --i) {
         fatcell = _fat.get_cell(i);
 
         if(fatcell.free()) _free.push(i);
@@ -364,7 +465,7 @@ void FatFS::_init_free() {
 
 // dir_entry: directory entry to start looking at
 // entry_blocks: list of subdirectory blocks to populate
-void FatFS::_dirs_at(DirEntry &dir_entry, std::queue<int> &entry_blocks) {
+void FatFS::_dirs_at(DirEntry &dir_entry, std::stack<int> &entry_blocks) {
     FatCell dircell;
 
     // clear directory if not empty
@@ -383,7 +484,7 @@ void FatFS::_dirs_at(DirEntry &dir_entry, std::queue<int> &entry_blocks) {
 
 // dir_entry: directory entry to start looking at
 // entry_blocks: list of file entry blocks to populate
-void FatFS::_files_at(DirEntry &dir_entry, std::queue<int> &entry_blocks) {
+void FatFS::_files_at(DirEntry &dir_entry, std::stack<int> &entry_blocks) {
     FatCell filecell;
 
     // clear directory if not empty
@@ -475,7 +576,7 @@ void FatFS::_delete_dir_at_dir(DirEntry &dir_entry, std::string name) {
             dir_entry.set_dircell_index(dircell.cell());
 
             _free_cell_and_block(dircell);
-            _delete_dir(dir);  // recursively delete directory
+            _free_dir_contents(dir);  // recursively free dir
         }
         // found @ rest of link
         else {
@@ -491,7 +592,7 @@ void FatFS::_delete_dir_at_dir(DirEntry &dir_entry, std::string name) {
                     prevcell.set_cell(dircell.cell());
 
                     _free_cell_and_block(dircell);
-                    _delete_dir(dir);  // recursively delete directory
+                    _free_dir_contents(dir);  // recursively free dir
 
                     break;
                 }
@@ -511,8 +612,13 @@ void FatFS::_delete_file_at_dir(DirEntry &dir_entry, std::string name) {
         // found @ first link, popfront
         if(file.name() == name) {
             dir_entry.update_last_modified();
+
+            // set directory entry's filecell pointer to next cell
             dir_entry.set_filecell_index(filecell.cell());
+
+            // free filecell and data blocks for this file
             _free_cell_and_block(filecell);
+            _free_file_data_blocks(file);
         }
         // found @ rest of link
         else {
@@ -526,6 +632,9 @@ void FatFS::_delete_file_at_dir(DirEntry &dir_entry, std::string name) {
 
                     // link previous cell to next cell
                     prevcell.set_cell(filecell.cell());
+
+                    // free filecell data blocks for this file
+                    _free_file_data_blocks(file);
                     _free_cell_and_block(filecell);
 
                     break;
@@ -535,7 +644,7 @@ void FatFS::_delete_file_at_dir(DirEntry &dir_entry, std::string name) {
     }
 }
 
-void FatFS::_delete_dir(DirEntry &dir_entry) {
+void FatFS::_free_dir_contents(DirEntry &dir_entry) {
     while(dir_entry.has_dirs()) {
         // get sub directories
         FatCell dircell = _fat.get_cell(dir_entry.dircell_index());
@@ -544,11 +653,8 @@ void FatFS::_delete_dir(DirEntry &dir_entry) {
         // set directory entry's dir cell pointer to next cell
         dir_entry.set_dircell_index(dircell.cell());
 
-        // recursively delete this directory
-        _delete_dir(dir);
-
-        // free dircell
-        _free_cell_and_block(dircell);
+        _free_cell_and_block(dircell);  // free dircell
+        _free_dir_contents(dir);        // recursively free dir's contents
     }
 
     while(dir_entry.has_files()) {
@@ -559,17 +665,32 @@ void FatFS::_delete_dir(DirEntry &dir_entry) {
         // set diretory entry's file cell pointer to next cell
         dir_entry.set_filecell_index(filecell.cell());
 
-        // TODO DELETE FILE DATA BLOCKS !!!!!!!!
-
-        // free filecell
+        // free filecell and data blocks associated with FileEntry
         _free_cell_and_block(filecell);
+        _free_file_data_blocks(file);
+    }
+}
+
+void FatFS::_free_file_data_blocks(FileEntry &file_entry) {
+    FatCell datacell;
+
+    while(file_entry.has_data()) {
+        // get datacell from data pointer in FileEntry
+        datacell = _fat.get_cell(file_entry.datacell_index());
+
+        // relink FileEntry data pointer to next cell
+        file_entry.set_datacell_index(datacell.cell());
+
+        // free datacell
+        _free_cell_and_block(datacell);
     }
 }
 
 void FatFS::_free_cell_and_block(FatCell &cell) {
-    // add cell to delete to free stack
+    // add this cell to free list
     _free.push(cell.block());
 
+    // mark this cell as free
     cell.set_cell(FatCell::FREE);
     cell.set_block(FatCell::FREE);
 }

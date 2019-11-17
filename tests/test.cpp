@@ -5,19 +5,21 @@
 #include <sys/types.h>  // unix types
 #include <unistd.h>
 #include <unistd.h>  // open(), read(), write(), usleep()
-#include <cstring>
-#include <cstring>  // strncpy()
+#include <cstring>   // strncpy()
 #include <iostream>
 #include <map>
 #include <stdexcept>  // std::exception
-#include <string>
-#include <string>  // std::string
+#include <string>     // std::string
 #include <vector>
 #include "../include/fat.h"
 
 int main() {
     std::cout << "Creating file system\n" << std::endl;
 
+    char *buf = nullptr;
+    int bytes = 0;
+    fs::FileEntry fentry;
+    std::string data;
     std::string dirname;
     std::string filename;
     int cylinders = 10;
@@ -43,11 +45,11 @@ int main() {
 
     filename = "File1 at root";
     std::cout << "\nAdding directory: " << filename << std::endl;
-    fatfs.add_file(filename);
+    fentry = fatfs.add_file(filename);
 
     filename = "File2 at root";
     std::cout << "\nAdding directory: " << filename << std::endl;
-    fatfs.add_file(filename);
+    fentry = fatfs.add_file(filename);
 
     std::cout << "\nUsed space (root entry takes up 128 bytes): "
               << fatfs.size() << std::endl;
@@ -58,118 +60,52 @@ int main() {
     fatfs.print_files();
     std::cout << "-------------------" << std::endl;
 
-    dirname = "Dir2 at root";
-    std::cout << "\nCD into: " << dirname << std::endl;
-    fatfs.change_dir(dirname);
+    std::cout << "\nWriting Data to FileEntry: " << fentry.name() << std::endl;
+    data = "Hello World";
+    fatfs.write_file_data(fentry, data.c_str(), data.size());
+    std::cout << "FileEntry size: " << fentry.size() << std::endl;
+    std::cout << "FileEntry data blocks: " << fentry.data_blocks() << std::endl;
+
+    std::cout << "\nReading data" << std::endl;
+    buf = new char[fentry.size() + 1];
+    bytes = fatfs.read_file_data(fentry, buf, fentry.size());
+    buf[bytes] = '\0';
+    std::cout << buf << std::endl;
+    delete[] buf;
 
     std::cout << "\nUsed space (root entry takes up 128 bytes): "
-              << fatfs.size() << std::endl;
-    std::cout << "Current directory: " << fatfs.current().name() << std::endl;
-    std::cout << "Printing dirs/files" << std::endl;
-    std::cout << "-------------------" << std::endl;
-    fatfs.print_dirs();
-    fatfs.print_files();
-    std::cout << "-------------------" << std::endl;
+              << fatfs.size();
+    std::cout << "\nFree space (root entry takes up 128 bytes): "
+              << fatfs.free_space() << std::endl;
 
-    dirname = "Nested1 Dir1 at Dir1";
-    filename = "Nested1 File1 at Dir1";
-    std::cout << "\nAdding directory: " << dirname << std::endl;
-    fatfs.add_dir(dirname);
-    std::cout << "Adding directory: " << filename << std::endl;
-    fatfs.add_file(filename);
+    std::cout << "\nWriting Data to FileEntry: " << fentry.name() << std::endl;
+    data =
+        "1222222222222222222222222222222222222222222222222222222222222222222222"
+        "2222222222222222222222222222222222222222222222222222222222344444444444"
+        "4444444444444444444444444444444444444444444444444444444444444444444444"
+        "4444444444444444444444444444444444444444444444566666666666666666666666"
+        "666";
+    fatfs.write_file_data(fentry, data.c_str(), data.size());
+    std::cout << "FileEntry size: " << fentry.size() << std::endl;
+    std::cout << "FileEntry data blocks: " << fentry.data_blocks() << std::endl;
 
-    dirname = "Nested1 Dir2 at Dir1";
-    filename = "Nested1 File2 at Dir1";
-    std::cout << "\nAdding directory: " << dirname << std::endl;
-    fatfs.add_dir(dirname);
-    std::cout << "Adding directory: " << filename << std::endl;
-    fatfs.add_file(filename);
+    std::cout << "\nReading data" << std::endl;
+    buf = new char[fentry.size() + 1];
+    bytes = fatfs.read_file_data(fentry, buf, fentry.size());
+    buf[bytes] = '\0';
+    std::cout << buf << std::endl;
 
-    std::cout << "\nUsed space (root entry takes up 128 bytes): "
-              << fatfs.size() << std::endl;
-    std::cout << "Current directory: " << fatfs.current().name() << std::endl;
-    std::cout << "Printing dirs/files" << std::endl;
-    std::cout << "-------------------" << std::endl;
-    fatfs.print_dirs();
-    fatfs.print_files();
-    std::cout << "-------------------" << std::endl;
-
-    dirname = "Nested1 Dir1 at Dir1";
-    std::cout << "\nCD into: " << dirname << std::endl;
-    fatfs.change_dir(dirname);
+    std::cout << "strlen " << strlen(buf) << std::endl;
+    delete[] buf;
 
     std::cout << "\nUsed space (root entry takes up 128 bytes): "
-              << fatfs.size() << std::endl;
-    std::cout << "Current directory: " << fatfs.current().name() << std::endl;
-    std::cout << "Printing dirs/files" << std::endl;
-    std::cout << "-------------------" << std::endl;
-    fatfs.print_dirs();
-    fatfs.print_files();
-    std::cout << "-------------------" << std::endl;
-
-    dirname = "Nested2 Dir1 at Dir1";
-    filename = "Nested2 File1 at Dir1";
-    std::cout << "\nAdding directory: " << dirname << std::endl;
-    fatfs.add_dir(dirname);
-    std::cout << "Adding directory: " << filename << std::endl;
-    fatfs.add_file(filename);
-
-    dirname = "Nested2 Dir2 at Dir1";
-    filename = "Nested2 File2 at Dir1";
-    std::cout << "\nAdding directory: " << dirname << std::endl;
-    fatfs.add_dir(dirname);
-    std::cout << "Adding directory: " << filename << std::endl;
-    fatfs.add_file(filename);
-
-    std::cout << "\nUsed space (root entry takes up 128 bytes): "
-              << fatfs.size() << std::endl;
-    std::cout << "Current directory: " << fatfs.current().name() << std::endl;
-    std::cout << "Printing dirs/files" << std::endl;
-    std::cout << "-------------------" << std::endl;
-    fatfs.print_dirs();
-    fatfs.print_files();
-    std::cout << "-------------------" << std::endl;
-
-    dirname = "..";
-    std::cout << "\nCD into: " << dirname << std::endl;
-    fatfs.change_dir(dirname);
-
-    dirname = "..";
-    std::cout << "\nCD into: " << dirname << std::endl;
-    fatfs.change_dir(dirname);
-
-    std::cout << "\nUsed space (root entry takes up 128 bytes): "
-              << fatfs.size() << std::endl;
-    std::cout << "Current directory: " << fatfs.current().name() << std::endl;
-    std::cout << "Printing dirs/files" << std::endl;
-    std::cout << "-------------------" << std::endl;
-    fatfs.print_dirs();
-    fatfs.print_files();
-    std::cout << "-------------------" << std::endl;
-
-    dirname = "Dir2 at root";
-    std::cout << "\nDeleting: " << dirname << std::endl;
-    fatfs.delete_dir(dirname);
-
-    std::cout << "\nUsed space (root entry takes up 128 bytes): "
-              << fatfs.size() << std::endl;
-    std::cout << "Current directory: " << fatfs.current().name() << std::endl;
-    std::cout << "Printing dirs/files" << std::endl;
-    std::cout << "-------------------" << std::endl;
-    fatfs.print_dirs();
-    fatfs.print_files();
-    std::cout << "-------------------" << std::endl;
-
-    dirname = "Dir1 at root";
-    std::cout << "\nDeleting: " << dirname << std::endl;
-    fatfs.delete_dir(dirname);
-
-    filename = "File1 at root";
-    std::cout << "\nDeleting: " << filename << std::endl;
-    fatfs.delete_file(filename);
+              << fatfs.size();
+    std::cout << "\nFree space (root entry takes up 128 bytes): "
+              << fatfs.free_space() << std::endl;
 
     filename = "File2 at root";
-    std::cout << "\nDeleting: " << filename << std::endl;
+    std::cout << "Deleting file: " << filename << std::endl;
+    // fatfs.remove_file_data(fentry);
     fatfs.delete_file(filename);
 
     std::cout << "\nUsed space (root entry takes up 128 bytes): "
@@ -180,6 +116,122 @@ int main() {
     fatfs.print_dirs();
     fatfs.print_files();
     std::cout << "-------------------" << std::endl;
+
+    // dirname = "Dir2 at root";
+    // std::cout << "\nCD into: " << dirname << std::endl;
+    // fatfs.change_dir(dirname);
+
+    // std::cout << "\nUsed space (root entry takes up 128 bytes): "
+    //           << fatfs.size() << std::endl;
+    // std::cout << "Current directory: " << fatfs.current().name() <<
+    // std::endl; std::cout << "Printing dirs/files" << std::endl; std::cout <<
+    // "-------------------" << std::endl; fatfs.print_dirs();
+    // fatfs.print_files();
+    // std::cout << "-------------------" << std::endl;
+
+    // dirname = "Nested1 Dir1 at Dir1";
+    // filename = "Nested1 File1 at Dir1";
+    // std::cout << "\nAdding directory: " << dirname << std::endl;
+    // fatfs.add_dir(dirname);
+    // std::cout << "Adding directory: " << filename << std::endl;
+    // fentry = fatfs.add_file(filename);
+
+    // dirname = "Nested1 Dir2 at Dir1";
+    // filename = "Nested1 File2 at Dir1";
+    // std::cout << "\nAdding directory: " << dirname << std::endl;
+    // fatfs.add_dir(dirname);
+    // std::cout << "Adding directory: " << filename << std::endl;
+    // fentry = fatfs.add_file(filename);
+
+    // std::cout << "\nUsed space (root entry takes up 128 bytes): "
+    //           << fatfs.size() << std::endl;
+    // std::cout << "Current directory: " << fatfs.current().name() <<
+    // std::endl; std::cout << "Printing dirs/files" << std::endl; std::cout <<
+    // "-------------------" << std::endl; fatfs.print_dirs();
+    // fatfs.print_files();
+    // std::cout << "-------------------" << std::endl;
+
+    // dirname = "Nested1 Dir1 at Dir1";
+    // std::cout << "\nCD into: " << dirname << std::endl;
+    // fatfs.change_dir(dirname);
+
+    // std::cout << "\nUsed space (root entry takes up 128 bytes): "
+    //           << fatfs.size() << std::endl;
+    // std::cout << "Current directory: " << fatfs.current().name() <<
+    // std::endl; std::cout << "Printing dirs/files" << std::endl; std::cout <<
+    // "-------------------" << std::endl; fatfs.print_dirs();
+    // fatfs.print_files();
+    // std::cout << "-------------------" << std::endl;
+
+    // dirname = "Nested2 Dir1 at Dir1";
+    // filename = "Nested2 File1 at Dir1";
+    // std::cout << "\nAdding directory: " << dirname << std::endl;
+    // fatfs.add_dir(dirname);
+    // std::cout << "Adding directory: " << filename << std::endl;
+    // fentry = fatfs.add_file(filename);
+
+    // dirname = "Nested2 Dir2 at Dir1";
+    // filename = "Nested2 File2 at Dir1";
+    // std::cout << "\nAdding directory: " << dirname << std::endl;
+    // fatfs.add_dir(dirname);
+    // std::cout << "Adding directory: " << filename << std::endl;
+    // fentry = fatfs.add_file(filename);
+
+    // std::cout << "\nUsed space (root entry takes up 128 bytes): "
+    //           << fatfs.size() << std::endl;
+    // std::cout << "Current directory: " << fatfs.current().name() <<
+    // std::endl; std::cout << "Printing dirs/files" << std::endl; std::cout <<
+    // "-------------------" << std::endl; fatfs.print_dirs();
+    // fatfs.print_files();
+    // std::cout << "-------------------" << std::endl;
+
+    // dirname = "..";
+    // std::cout << "\nCD into: " << dirname << std::endl;
+    // fatfs.change_dir(dirname);
+
+    // dirname = "..";
+    // std::cout << "\nCD into: " << dirname << std::endl;
+    // fatfs.change_dir(dirname);
+
+    // std::cout << "\nUsed space (root entry takes up 128 bytes): "
+    //           << fatfs.size() << std::endl;
+    // std::cout << "Current directory: " << fatfs.current().name() <<
+    // std::endl; std::cout << "Printing dirs/files" << std::endl; std::cout <<
+    // "-------------------" << std::endl; fatfs.print_dirs();
+    // fatfs.print_files();
+    // std::cout << "-------------------" << std::endl;
+
+    // dirname = "Dir2 at root";
+    // std::cout << "\nDeleting: " << dirname << std::endl;
+    // fatfs.delete_dir(dirname);
+
+    // std::cout << "\nUsed space (root entry takes up 128 bytes): "
+    //           << fatfs.size() << std::endl;
+    // std::cout << "Current directory: " << fatfs.current().name() <<
+    // std::endl; std::cout << "Printing dirs/files" << std::endl; std::cout <<
+    // "-------------------" << std::endl; fatfs.print_dirs();
+    // fatfs.print_files();
+    // std::cout << "-------------------" << std::endl;
+
+    // dirname = "Dir1 at root";
+    // std::cout << "\nDeleting: " << dirname << std::endl;
+    // fatfs.delete_dir(dirname);
+
+    // filename = "File1 at root";
+    // std::cout << "\nDeleting: " << filename << std::endl;
+    // fatfs.delete_file(filename);
+
+    // filename = "File2 at root";
+    // std::cout << "\nDeleting: " << filename << std::endl;
+    // fatfs.delete_file(filename);
+
+    // std::cout << "\nUsed space (root entry takes up 128 bytes): "
+    //           << fatfs.size() << std::endl;
+    // std::cout << "Current directory: " << fatfs.current().name() <<
+    // std::endl; std::cout << "Printing dirs/files" << std::endl; std::cout <<
+    // "-------------------" << std::endl; fatfs.print_dirs();
+    // fatfs.print_files();
+    // std::cout << "-------------------" << std::endl;
 
     std::cout << "\nRemoving file system" << std::endl;
 
