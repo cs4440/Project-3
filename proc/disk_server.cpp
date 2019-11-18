@@ -64,10 +64,10 @@ void *connection_handler(void *socketfd) {
     std::string client_msg;
     Parser parser;
     std::vector<std::string> tokens;
-    std::string diskfile = "client.disk";
+    std::string diskname = "client";
 
     // create disk with default settings
-    fs::Disk disk(diskfile, CYLINDERS, SECTORS);
+    fs::Disk disk(diskname, CYLINDERS, SECTORS);
     disk.set_track_time(TRACK_TIME);
 
     // static messages
@@ -88,7 +88,7 @@ void *connection_handler(void *socketfd) {
 
     // try to open disk if disk file exists
     try {
-        if(disk.open_disk(diskfile))
+        if(disk.open_disk(diskname))
             welcome += "Disk exists in system. Using existing disk: " +
                        std::to_string(disk.cylinder()) + " " +
                        std::to_string(disk.sector());

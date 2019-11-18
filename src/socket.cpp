@@ -90,13 +90,12 @@ void send_msg(int sockfd, const std::string &msg) {
     ssize_t bytes = -1;
 
     try {
-        if(msg.size() > 0) {
-            // send size to indicate the actual message size it will send
-            std::size_t msg_size = msg.size();
-            bytes =
-                send(sockfd, (char *)&msg_size, sizeof(msg_size), MSG_NOSIGNAL);
-            throw_socket_io(bytes);
+        // send size to indicate the actual message size it will send
+        std::size_t msg_size = msg.size();
+        bytes = send(sockfd, (char *)&msg_size, sizeof(msg_size), MSG_NOSIGNAL);
+        throw_socket_io(bytes);
 
+        if(msg.size() > 0) {
             // send message through socket
             bytes = send(sockfd, msg.c_str(), msg.size(), MSG_NOSIGNAL);
             throw_socket_io(bytes);
@@ -110,11 +109,11 @@ void send_msg(int sockfd, char *msg, std::size_t sz) {
     ssize_t bytes = -1;
 
     try {
-        if(sz > 0) {
-            // send size to indicate the actual message size it will send
-            bytes = send(sockfd, (char *)&sz, sizeof(sz), MSG_NOSIGNAL);
-            throw_socket_io(bytes);
+        // send size to indicate the actual message size it will send
+        bytes = send(sockfd, (char *)&sz, sizeof(sz), MSG_NOSIGNAL);
+        throw_socket_io(bytes);
 
+        if(sz > 0) {
             // send message through socket
             bytes = send(sockfd, msg, sz, MSG_NOSIGNAL);
             throw_socket_io(bytes);

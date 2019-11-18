@@ -11,11 +11,16 @@ TESTDIR         := tests
 TESTS           := test
 UTILS           := utils.o
 PARSER          := state_machine.o token.o tokenizer.o parser.o
-FS              := disk.o fat.o
+DISK            := disk.o
+FS              := $(DISK) fat.o
 SOCKET          := socket.o
-ALL             := basic_client basic_server\
-                   dir_listing_client dir_listing_server\
-                   disk_server disk_client disk_client_rand
+BASIC_PROC      := basic_client basic_server
+DIRLIST_PROC    := dir_listing_client dir_listing_server
+DISK_PROC       := $(UTILS) $(PARSER) $(SOCKET) $(DISK)\
+                   disk_client disk_client_rand disk_server
+FS_PROC         := $(UTILS) $(PARSER) $(SOCKET) $(FS) fs_client fs_server
+ALL             := $(BASIC_PROC) $(DIRLIST_PROC) $(DISK_PROC) $(FS_PROC)
+                   
 
 # $@ targt name
 # $< first prerequisite
@@ -23,6 +28,10 @@ ALL             := basic_client basic_server\
 
 all: $(ALL)
 #	rm *.o
+
+# BASIC SERVER
+
+basic: $(BASIC_PROC)
 
 basic_server: basic_server.o
 	$(CXX) -o $@ $^ $(LDFLAGS)
@@ -36,6 +45,8 @@ basic_client: basic_client.o
 basic_client.o: $(PROC)/basic_client.cpp
 	$(CXX) $(CXXFLAGS) -c $<
 
+listing: $(DIRLIST_PROC)
+
 dir_listing_server: dir_listing_server.o
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
@@ -48,13 +59,9 @@ dir_listing_client: dir_listing_client.o
 dir_listing_client.o: $(PROC)/dir_listing_client.cpp
 	$(CXX) $(CXXFLAGS) -c $<
 
-# DISK SERVER
+# DISK CLIENT/SERVER
 
-disk_server: disk_server.o $(SOCKET) $(FS) $(PARSER) 
-	$(CXX) -o $@ $^ $(LDFLAGS)
-
-disk_server.o: $(PROC)/disk_server.cpp
-	$(CXX) $(CXXFLAGS) -c $<
+disk_proc: $(DISK_PROC)
 
 disk_client: disk_client.o $(SOCKET)
 	$(CXX) -o $@ $^ $(LDFLAGS)
@@ -66,6 +73,28 @@ disk_client_rand: disk_client_rand.o $(SOCKET)
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 disk_client_rand.o: $(PROC)/disk_client_rand.cpp
+	$(CXX) $(CXXFLAGS) -c $<
+
+disk_server: disk_server.o $(PARSER) $(DISK) $(SOCKET)
+	$(CXX) -o $@ $^ $(LDFLAGS)
+
+disk_server.o: $(PROC)/disk_server.cpp
+	$(CXX) $(CXXFLAGS) -c $<
+
+# FILESYSTEM CLIENT/SERVER
+
+fs: $(FS_PROC)
+
+fs_client: fs_client.o $(SOCKET)
+	$(CXX) -o $@ $^ $(LDFLAGS)
+
+fs_client.o: $(PROC)/fs_client.cpp
+	$(CXX) $(CXXFLAGS) -c $<
+
+fs_server: fs_server.o  $(PARSER) $(FS) $(SOCKET)
+	$(CXX) -o $@ $^ $(LDFLAGS)
+
+fs_server.o: $(PROC)/fs_server.cpp
 	$(CXX) $(CXXFLAGS) -c $<
 
 # UTILS
@@ -95,29 +124,14 @@ parser.o: ${SRC}/parser.cpp\
 	${INC}/parser.h
 	$(CXX) $(CXXFLAGS) -c $<
 
-# FILE SYSTEM
+# DISK
 disk.o: ${SRC}/disk.cpp\
 	${INC}/disk.h
 	$(CXX) $(CXXFLAGS) -c $<
 
+# FILESYSTEM
 fat.o: ${SRC}/fat.cpp\
 	${INC}/fat.h
-	$(CXX) $(CXXFLAGS) -c $<
-
-entry.o: ${SRC}/entry.cpp\
-	${INC}/entry.h
-	$(CXX) $(CXXFLAGS) -c $<
-
-file.o: ${SRC}/file.cpp\
-	${INC}/file.h
-	$(CXX) $(CXXFLAGS) -c $<
-
-directory.o: ${SRC}/directory.cpp\
-	${INC}//directory.h
-	$(CXX) $(CXXFLAGS) -c $<
-
-filesystem.o: ${SRC}/filesystem.cpp\
-	${INC}/filesystem.h
 	$(CXX) $(CXXFLAGS) -c $<
 
 # TESTS
