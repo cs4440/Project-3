@@ -458,8 +458,8 @@ private:
     void _init_free();
 
     // get a set of all entry at given directory entry by comparison function
-    void _dirs_at(DirEntry& dir_entry, DirSet& entry_blocks);
-    void _files_at(DirEntry& dir_entry, FileSet& entry_blocks);
+    void _dirs_at(DirEntry& dir_entry, DirSet& entries_set);
+    void _files_at(DirEntry& dir_entry, FileSet& entries_set);
 
     // find an entry by name at given directory entry
     DirEntry _find_dir_at(DirEntry& dir_entry, std::string name);

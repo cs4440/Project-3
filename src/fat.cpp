@@ -229,18 +229,17 @@ DirEntry FatFS::current() const { return _current; }
 void FatFS::print_dirs() {
     DirSet entries(cmp_dir_name);
 
-    // get an orderd set of Entry by comparison function
+    // get an ordered set of Entry by comparator
     _dirs_at(_current, entries);
 
-    for(auto it = entries.begin(); it != entries.end(); ++it) {
+    for(auto it = entries.begin(); it != entries.end(); ++it)
         std::cout << it->name() << '\n';
-    }
 }
 
 void FatFS::print_dirs_str(std::string &output) {
     DirSet entries(cmp_dir_name);
 
-    // get an orderd set of Entry by comparison function
+    // get an ordered set of Entry by comparator
     _dirs_at(_current, entries);
 
     for(auto it = entries.begin(); it != entries.end(); ++it) {
@@ -254,18 +253,17 @@ void FatFS::print_dirs_str(std::string &output) {
 void FatFS::print_files() {
     FileSet entries(cmp_file_name);
 
-    // get an orderd set of Entry by comparison function
+    // get an ordered set of Entry by comparator
     _files_at(_current, entries);
 
-    for(auto it = entries.begin(); it != entries.end(); ++it) {
+    for(auto it = entries.begin(); it != entries.end(); ++it)
         std::cout << it->name() << '\n';
-    }
 }
 
 void FatFS::print_files_str(std::string &output) {
     FileSet entries(cmp_file_name);
 
-    // get an orderd set of Entry by comparison function
+    // get an ordered set of Entry by comparator
     _files_at(_current, entries);
 
     for(auto it = entries.begin(); it != entries.end(); ++it) {
@@ -528,38 +526,38 @@ void FatFS::_init_free() {
 }
 
 // dir_entry: directory entry to start looking at
-// entry_blocks: list of subdirectory blocks to populate
-void FatFS::_dirs_at(DirEntry &dir_entry, DirSet &entry_blocks) {
+// entries_set: set of ordered entires by comparator
+void FatFS::_dirs_at(DirEntry &dir_entry, DirSet &entries_set) {
     FatCell dircell;
 
     // clear directory if not empty
-    entry_blocks.clear();
+    entries_set.clear();
 
     if(dir_entry.has_dirs()) {
-        entry_blocks.emplace(_disk->file_at(dir_entry.dircell_index()));
+        entries_set.emplace(_disk->file_at(dir_entry.dircell_index()));
         dircell = _fat.get_cell(dir_entry.dircell_index());
 
         while(dircell.has_next()) {
-            entry_blocks.emplace(_disk->file_at(dircell.cell()));
+            entries_set.emplace(_disk->file_at(dircell.cell()));
             dircell = _fat.get_cell(dircell.cell());
         }
     }
 }
 
 // dir_entry: directory entry to start looking at
-// entry_blocks: list of file entry blocks to populate
-void FatFS::_files_at(DirEntry &dir_entry, FileSet &entry_blocks) {
+// entries_set: set of ordered entires by comparator
+void FatFS::_files_at(DirEntry &dir_entry, FileSet &entries_set) {
     FatCell filecell;
 
     // clear directory if not empty
-    entry_blocks.clear();
+    entries_set.clear();
 
     if(dir_entry.has_files()) {
-        entry_blocks.emplace(_disk->file_at(dir_entry.filecell_index()));
+        entries_set.emplace(_disk->file_at(dir_entry.filecell_index()));
         filecell = _fat.get_cell(dir_entry.filecell_index());
 
         while(filecell.has_next()) {
-            entry_blocks.emplace(_disk->file_at(filecell.cell()));
+            entries_set.emplace(_disk->file_at(filecell.cell()));
             filecell = _fat.get_cell(filecell.cell());
         }
     }
