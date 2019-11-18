@@ -66,6 +66,19 @@ int main() {
     fatfs.print_dirs();
     fatfs.print_files();
 
+    dirname = "Dir3 @ root";
+    std::cout << "\nAdding directory: " << dirname << std::endl;
+    fatfs.add_dir(dirname);
+
+    std::cout << "\nPrinting fatfs info:" << std::endl;
+    std::cout << "----------------------" << std::endl;
+    std::cout << fatfs.info() << std::endl;
+
+    std::cout << "\nListing at: " << fatfs.current().name() << std::endl;
+    std::cout << "------------" << std::endl;
+    fatfs.print_dirs();
+    fatfs.print_files();
+
     filename = "File1 @ root";
     std::cout << "\nAdding directory: " << dirname << std::endl;
     fatfs.add_file(filename);

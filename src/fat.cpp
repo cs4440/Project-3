@@ -282,88 +282,11 @@ void FatFS::remove_filesystem() {
 }
 
 DirEntry FatFS::add_dir(std::string name) {
-    DirEntry dir, found;
-
-    if(name.size() > ENTRY::MAX_NAME - 1)
-        throw std::range_error("File name size exceeded: " +
-                               std::to_string(ENTRY::MAX_NAME - 1));
-
-    // check if name exists
-    found = _find_dir_at(_current, name);
-
-    // check if there's free fat cell
-    if(!found && _free.size()) {
-        // get a new index from free index list
-        int new_index = _free.top();  // get a free cell index
-        _free.pop();                  // remove cell index
-
-        // get a new cell from free index
-        FatCell newcell = _fat.get_cell(new_index);
-
-        // mark new cell's cell pointer to END and mark disk block at free index
-        newcell.set_next_cell(ENTRY::ENDBLOCK);
-        newcell.set_used();
-
-        // free index also indicates free block in disk
-        // get directory entry at block and update values
-        dir = DirEntry(_disk->file_at(new_index));
-        dir.init();                      // initialize default values
-        dir.set_name(name);              // set diirectory name
-        dir.set_dot(new_index);          // set dir's location
-        dir.set_dotdot(_current.dot());  // set parent's location
-
-        // update last cell pointer
-        if(_current.has_dirs())
-            _last_dircell_from_dir_entry(_current).set_next_cell(new_index);
-        else
-            _current.set_dircell_index(new_index);  // update dir pointer
-
-        _current.update_last_modified();  // update current directory times
-    }
-
-    return dir;
+    return _add_dir_at(_current, name);
 }
 
 FileEntry FatFS::add_file(std::string name) {
-    FileEntry file, found;
-
-    if(name.size() > ENTRY::MAX_NAME - 1)
-        throw std::range_error("File name size exceeded: " +
-                               std::to_string(ENTRY::MAX_NAME - 1));
-
-    // check if name exists
-    found = _find_file_at(_current, name);
-
-    // check if there's free fat cell
-    if(!found && _free.size()) {
-        // get a new index from free index list
-        int new_index = _free.top();  // get a free cell index
-        _free.pop();                  // remove cell index
-
-        // get a new cell from free index
-        FatCell newcell = _fat.get_cell(new_index);
-
-        // mark new cell's cell pointer to END and mark disk block at free index
-        newcell.set_next_cell(ENTRY::ENDBLOCK);
-        newcell.set_used();
-
-        // free index also indicates free block in disk
-        // get file entry at block and update values
-        file = FileEntry(_disk->file_at(new_index));
-        file.init();          // initialize default values
-        file.set_name(name);  // set diirectory name
-        file.set_dot(new_index);
-
-        // update last cell pointer
-        if(_current.has_files())
-            _last_filecell_from_dir_entry(_current).set_next_cell(new_index);
-        else
-            _current.set_filecell_index(new_index);  // update dir pointer
-
-        _current.update_last_modified();  // update current directory times
-    }
-
-    return file;
+    return _add_file_at(_current, name);
 }
 
 bool FatFS::delete_dir(std::string name) {
@@ -525,6 +448,102 @@ void FatFS::_init_free() {
     }
 }
 
+// DirEntry target: add Entry to this directory
+// return invalid Entry if can not add
+DirEntry FatFS::_add_dir_at(DirEntry target, std::string name) {
+    DirEntry dir, found;
+
+    if(name.size() > ENTRY::MAX_NAME - 1)
+        throw std::range_error("File name size exceeded: " +
+                               std::to_string(ENTRY::MAX_NAME - 1));
+
+    // check if name exists
+    found = _find_dir_orlast_at(target, name);
+
+    // check if there's free fat cell
+    if(_free.size()) {
+        if(found && found.name() == name)
+            return dir;
+        else {
+            // get a new index from free index list
+            int new_index = _free.top();  // get a free cell index
+            _free.pop();                  // remove cell index
+
+            // get a new cell from free index
+            FatCell newcell = _fat.get_cell(new_index);
+
+            // mark new cell's cell pointer to END
+            // mark disk block at free index
+            newcell.set_next_cell(ENTRY::ENDBLOCK);
+            newcell.set_used();
+
+            // free index also indicates free block in disk
+            // get directory entry at block and update values
+            dir = DirEntry(_disk->file_at(new_index));
+            dir.init();                    // initialize default values
+            dir.set_name(name);            // set diirectory name
+            dir.set_dot(new_index);        // set dir's location
+            dir.set_dotdot(target.dot());  // set parent's location
+
+            // update last cell pointer
+            if(target.has_dirs()) {
+                _fat.get_cell(found.dot()).set_next_cell(new_index);
+            } else
+                target.set_dircell_index(new_index);  // update dir pointer
+
+            target.update_last_modified();  // update current directory times
+        }
+    }
+    return dir;
+}
+
+// DirEntry target: add Entry to this directory
+// return invalid Entry if can not add
+FileEntry FatFS::_add_file_at(DirEntry target, std::string name) {
+    FileEntry file, found;
+
+    if(name.size() > ENTRY::MAX_NAME - 1)
+        throw std::range_error("File name size exceeded: " +
+                               std::to_string(ENTRY::MAX_NAME - 1));
+
+    // check if name exists
+    found = _find_file_orlast_at(target, name);
+
+    // check if there's free fat cell
+    if(_free.size()) {
+        if(found && found.name() == name)
+            return file;
+        else {  // get a new index from free index list
+            int new_index = _free.top();  // get a free cell index
+            _free.pop();                  // remove cell index
+
+            // get a new cell from free index
+            FatCell newcell = _fat.get_cell(new_index);
+
+            // mark new cell's cell pointer to END
+            // mark disk block at free index
+            newcell.set_next_cell(ENTRY::ENDBLOCK);
+            newcell.set_used();
+
+            // free index also indicates free block in disk
+            // get file entry at block and update values
+            file = FileEntry(_disk->file_at(new_index));
+            file.init();          // initialize default values
+            file.set_name(name);  // set diirectory name
+            file.set_dot(new_index);
+
+            // update last cell pointer
+            if(target.has_files())
+                _last_filecell_from_dir_entry(target).set_next_cell(new_index);
+            else
+                target.set_filecell_index(new_index);  // update dir pointer
+
+            target.update_last_modified();  // update current directory times
+        }
+    }
+    return file;
+}
+
 // dir_entry: directory entry to start looking at
 // entries_set: set of ordered entires by comparator
 void FatFS::_dirs_at(DirEntry &dir_entry, DirSet &entries_set) {
@@ -622,6 +641,57 @@ FileEntry FatFS::_find_file_at(DirEntry &dir_entry, std::string name) {
     }
 
     return found;
+}
+
+// dir_entry: directory entry to start looking at
+DirEntry FatFS::_find_dir_orlast_at(DirEntry &dir_entry, std::string name) {
+    DirEntry dir;
+    FatCell dircell;
+
+    if(name == ".") {
+        dir = dir_entry;
+    } else if(name == "..") {
+        int parent_block = dir_entry.dotdot();
+
+        if(parent_block != ENDBLOCK)
+            dir = DirEntry(_disk->file_at(parent_block));
+        else
+            dir = dir_entry;
+    } else if(dir_entry.has_dirs()) {
+        dir = DirEntry(_disk->file_at(dir_entry.dircell_index()));
+        dircell = _fat.get_cell(dir_entry.dircell_index());
+
+        if(dir.name() != name)
+            while(dircell.has_next()) {
+                dir = DirEntry(_disk->file_at(dircell.cell()));
+                dircell = _fat.get_cell(dircell.cell());
+
+                if(dir.name() == name) break;
+            }
+    }
+
+    return dir;
+}
+
+// dir_entry: directory entry to start looking at
+FileEntry FatFS::_find_file_orlast_at(DirEntry &dir_entry, std::string name) {
+    FileEntry file;
+    FatCell filecell;
+
+    if(dir_entry.has_files()) {
+        file = FileEntry(_disk->file_at(dir_entry.filecell_index()));
+        filecell = _fat.get_cell(dir_entry.filecell_index());
+
+        if(file.name() != name)
+            while(filecell.has_next()) {
+                file = FileEntry(_disk->file_at(filecell.cell()));
+                filecell = _fat.get_cell(filecell.cell());
+
+                if(file.name() == name) break;
+            }
+    }
+
+    return file;
 }
 
 bool FatFS::_delete_dir_at_dir(DirEntry &dir_entry, std::string name) {

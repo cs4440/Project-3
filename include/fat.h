@@ -162,6 +162,10 @@ public:
     void set_last_modified(time_t t) { *_last_modified = t; }
     void update_last_modified() { *_last_modified = std::time(_last_modified); }
 
+    friend bool operator<(const DirEntry& lhs, const DirEntry& rhs) {
+        return lhs.name() < rhs.name();
+    }
+
     void _reset_address(char* address) {
         _name = address;
         _type = (bool*)(_name + MAX_NAME);
@@ -457,13 +461,21 @@ private:
     void _init_root();
     void _init_free();
 
+    // add dir or file at given directory
+    DirEntry _add_dir_at(DirEntry target, std::string name);
+    FileEntry _add_file_at(DirEntry target, std::string name);
+
     // get a set of all entry at given directory entry by comparison function
     void _dirs_at(DirEntry& dir_entry, DirSet& entries_set);
     void _files_at(DirEntry& dir_entry, FileSet& entries_set);
 
-    // find an entry by name at given directory entry
+    // find an entry by name at given directory or return invalid entry
     DirEntry _find_dir_at(DirEntry& dir_entry, std::string name);
     FileEntry _find_file_at(DirEntry& dir_entry, std::string name);
+
+    // find an entry by name at given directory or return last entry
+    DirEntry _find_dir_orlast_at(DirEntry& dir_entry, std::string name);
+    FileEntry _find_file_orlast_at(DirEntry& dir_entry, std::string name);
 
     // delete directory of a specificed name
     bool _delete_dir_at_dir(DirEntry& dir_entry, std::string name);
