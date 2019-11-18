@@ -10,6 +10,7 @@
 #include <cstring>      // strncpy(), memset()
 #include <ctime>        // ctime(), time_t
 #include <iostream>     // stream
+#include <set>          // set
 #include <stack>        // stack
 #include <stdexcept>    // exception
 #include <string>       // string
@@ -262,6 +263,10 @@ public:
     void set_last_modified(time_t t) { *_last_modified = t; }
     void update_last_modified() { *_last_modified = std::time(_last_modified); }
 
+    friend bool operator<(const FileEntry& lhs, const FileEntry& rhs) {
+        return lhs.name() < rhs.name();
+    }
+
     void _reset_address(char* address) {
         _name = address;
         _type = (bool*)(_name + MAX_NAME);
@@ -350,6 +355,10 @@ private:
     char* _data;
 };
 
+// ENTRY COMPARATORS
+bool cmp_dir_name(const DirEntry& a, const DirEntry& b);
+bool cmp_file_name(const FileEntry& a, const FileEntry& b);
+
 /*******************************************************************************
  * Class to representation of File Allocation Table (FAT), which is comprised
  * of FatCell. FAT table size is an array of FatCells, which is mapped from
@@ -394,6 +403,10 @@ private:
 
 class FatFS {
 public:
+    typedef std::set<DirEntry, bool (*)(const DirEntry&, const DirEntry&)>
+        DirSet;
+    typedef std::set<FileEntry, bool (*)(const FileEntry&, const FileEntry&)>
+        FileSet;
     FatFS(Disk* disk = nullptr);
 
     // FILE SYSTEM INITIALIZATIONS!!!
@@ -444,10 +457,11 @@ private:
     void _init_root();
     void _init_free();
 
-    // return by ref a list of subdirectory blocks at given disk block
-    // start_block is the block number referring to the Entry
-    void _dirs_at(DirEntry& dir_entry, std::stack<int>& entry_blocks);
-    void _files_at(DirEntry& dir_entry, std::stack<int>& entry_blocks);
+    // get a set of all entry at given directory entry by comparison function
+    void _dirs_at(DirEntry& dir_entry, DirSet& entry_blocks);
+    void _files_at(DirEntry& dir_entry, FileSet& entry_blocks);
+
+    // find an entry by name at given directory entry
     DirEntry _find_dir_at(DirEntry& dir_entry, std::string name);
     FileEntry _find_file_at(DirEntry& dir_entry, std::string name);
 

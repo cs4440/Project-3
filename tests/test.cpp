@@ -119,7 +119,7 @@ int main() {
     std::cout << "\nReading data from: " << filename << std::endl;
     buff = new char[fentry.size() + 1];
     bytes = fatfs.read_file_data(fentry, buff, fentry.size());
-    buff[bytes];
+    buff[bytes] = '\0';
     std::cout << buff << std::endl;
 
     std::cout << "Bytes read: " << bytes << std::endl;

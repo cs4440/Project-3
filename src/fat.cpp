@@ -2,6 +2,15 @@
 
 namespace fs {
 
+// ENTRY COMPARATORS
+bool cmp_dir_name(const DirEntry &a, const DirEntry &b) {
+    return a.name() < b.name();
+}
+
+bool cmp_file_name(const FileEntry &a, const FileEntry &b) {
+    return a.name() < b.name();
+}
+
 Fat::Fat(std::string name, int cells)
     : _name(name),
       _fatname(_name + ".fat"),
@@ -218,70 +227,52 @@ std::string FatFS::size_info() const {
 DirEntry FatFS::current() const { return _current; }
 
 void FatFS::print_dirs() {
-    int block = -1;
-    std::stack<int> dir_entry_blocks;
+    DirSet entries(cmp_dir_name);
 
-    // get a queue of disk blocks for subdirectories
-    _dirs_at(_current, dir_entry_blocks);
+    // get an orderd set of Entry by comparison function
+    _dirs_at(_current, entries);
 
-    while(!dir_entry_blocks.empty()) {
-        block = dir_entry_blocks.top();
-        dir_entry_blocks.pop();
-
-        DirEntry dir = DirEntry(_disk->file_at(block));
-        std::cout << dir.name() << std::endl;
+    for(auto it = entries.begin(); it != entries.end(); ++it) {
+        std::cout << it->name() << '\n';
     }
 }
 
 void FatFS::print_dirs_str(std::string &output) {
-    int block = -1;
-    std::stack<int> dir_entry_blocks;
+    DirSet entries(cmp_dir_name);
 
-    // get a queue of disk blocks for subdirectories
-    _dirs_at(_current, dir_entry_blocks);
+    // get an orderd set of Entry by comparison function
+    _dirs_at(_current, entries);
 
-    while(!dir_entry_blocks.empty()) {
-        block = dir_entry_blocks.top();
-        dir_entry_blocks.pop();
+    for(auto it = entries.begin(); it != entries.end(); ++it) {
+        output += it->name();
 
-        DirEntry dir = DirEntry(_disk->file_at(block));
-        output += dir.name();
-
-        if(!dir_entry_blocks.empty()) output += "\n";
+        auto next = it;
+        if(++next != entries.end()) output += '\n';
     }
 }
 
 void FatFS::print_files() {
-    int block = -1;
-    std::stack<int> file_entry_blocks;
+    FileSet entries(cmp_file_name);
 
-    // get a queue of disk blocks for subdirectories
-    _files_at(_current, file_entry_blocks);
+    // get an orderd set of Entry by comparison function
+    _files_at(_current, entries);
 
-    while(!file_entry_blocks.empty()) {
-        block = file_entry_blocks.top();
-        file_entry_blocks.pop();
-
-        FileEntry file = FileEntry(_disk->file_at(block));
-        std::cout << file.name() << std::endl;
+    for(auto it = entries.begin(); it != entries.end(); ++it) {
+        std::cout << it->name() << '\n';
     }
 }
 
 void FatFS::print_files_str(std::string &output) {
-    int block = -1;
-    std::stack<int> file_entry_blocks;
+    FileSet entries(cmp_file_name);
 
-    // get a queue of disk blocks for subdirectories
-    _files_at(_current, file_entry_blocks);
+    // get an orderd set of Entry by comparison function
+    _files_at(_current, entries);
 
-    while(!file_entry_blocks.empty()) {
-        block = file_entry_blocks.top();
-        file_entry_blocks.pop();
+    for(auto it = entries.begin(); it != entries.end(); ++it) {
+        output += it->name();
 
-        FileEntry file = FileEntry(_disk->file_at(block));
-        output += file.name();
-
-        if(!file_entry_blocks.empty()) output += "\n";
+        auto next = it;
+        if(++next != entries.end()) output += '\n';
     }
 }
 
@@ -538,18 +529,18 @@ void FatFS::_init_free() {
 
 // dir_entry: directory entry to start looking at
 // entry_blocks: list of subdirectory blocks to populate
-void FatFS::_dirs_at(DirEntry &dir_entry, std::stack<int> &entry_blocks) {
+void FatFS::_dirs_at(DirEntry &dir_entry, DirSet &entry_blocks) {
     FatCell dircell;
 
     // clear directory if not empty
-    while(!entry_blocks.empty()) entry_blocks.pop();
+    entry_blocks.clear();
 
     if(dir_entry.has_dirs()) {
-        entry_blocks.push(dir_entry.dircell_index());
+        entry_blocks.emplace(_disk->file_at(dir_entry.dircell_index()));
         dircell = _fat.get_cell(dir_entry.dircell_index());
 
         while(dircell.has_next()) {
-            entry_blocks.push(dircell.cell());
+            entry_blocks.emplace(_disk->file_at(dircell.cell()));
             dircell = _fat.get_cell(dircell.cell());
         }
     }
@@ -557,18 +548,18 @@ void FatFS::_dirs_at(DirEntry &dir_entry, std::stack<int> &entry_blocks) {
 
 // dir_entry: directory entry to start looking at
 // entry_blocks: list of file entry blocks to populate
-void FatFS::_files_at(DirEntry &dir_entry, std::stack<int> &entry_blocks) {
+void FatFS::_files_at(DirEntry &dir_entry, FileSet &entry_blocks) {
     FatCell filecell;
 
     // clear directory if not empty
-    while(!entry_blocks.empty()) entry_blocks.pop();
+    entry_blocks.clear();
 
     if(dir_entry.has_files()) {
-        entry_blocks.push(dir_entry.filecell_index());
+        entry_blocks.emplace(_disk->file_at(dir_entry.filecell_index()));
         filecell = _fat.get_cell(dir_entry.filecell_index());
 
         while(filecell.has_next()) {
-            entry_blocks.push(filecell.cell());
+            entry_blocks.emplace(_disk->file_at(filecell.cell()));
             filecell = _fat.get_cell(filecell.cell());
         }
     }
