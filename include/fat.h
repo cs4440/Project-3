@@ -17,68 +17,72 @@
 
 namespace fs {
 
-enum ENTRY { DIR = 0, FILE = 1, ENDBLOCK = -1, MAX_NAME = 86 };
+enum ENTRY { DIR = 0, FILE = 1, ENDBLOCK = -1, MAX_NAME = 87 };
 
 /*******************************************************************************
  * Class to representation of a cell in File Allocation Table (FAT).
  * The FatCell takes in an address (of a FAT) to represent its data.
  *
- * Structure of a cell: [ int cell #, int block #]
- * Size: 2 * sizeof(int) for each fat cell
+ * Structure of a cell: [ bool status, int next cell/block #]
+ * Size: sizeof(bool) + sizeof(int) for each fat cell
  *
- * Values of cell:
- * -2 = unused cell
- * -1 = end of cell
- * 0 >= next cell #
+ * Values of status: FREE or USED
+ *
+ * Values of _next_cell: ENTRY::ENDBLOCK or greater
+ * ENTRY::ENDBLOCK: end of next cell/block chain
+ * _next cell > ENDBLOCK: valid next cell/block chain
  ******************************************************************************/
 struct FatCell {
     enum {
-        FREE = -2,  // Indicates available cell
-        END = -1,   // Indicates end of cell
-        SIZE = 8    // 8 bytes for a FatCell
+        FREE = 0,                          // indicates free cell
+        USED = 1,                          // indicates used cell
+        SIZE = sizeof(bool) + sizeof(int)  // 8 bytes for a FatCell
     };
 
-    int* _cell;
-    int* _block;
+    bool* _status;
+    int* _next_cell;
 
     // CONSTRUCTOR
-    FatCell(int* address = nullptr) : _cell(address), _block(address + 1) {}
+    FatCell(char* address = nullptr)
+        : _status((bool*)address), _next_cell((int*)(_status + 1)) {}
 
-    bool valid() const { return _cell != nullptr; }
-    bool has_next() const { return _cell != nullptr && *_cell > END; }
-    bool free() const { return *_cell == FREE; }
-    bool end() const { return *_cell == END; }
+    bool valid() const { return _status != nullptr; }
+    bool has_next() const {
+        return _next_cell != nullptr && *_next_cell > ENTRY::ENDBLOCK;
+    }
+    bool free() const { return *_status == FREE; }
+    bool used() const { return *_status == USED; }
 
     // get cell/block data from address
-    int cell() const { return *_cell; }
-    int block() const { return *_block; }
+    int cell() const { return *_next_cell; }
 
     // set cell/block from address
-    void set_cell(int c) { *_cell = c; }
-    void set_block(int b) { *_block = b; }
+    void set_free() { *_status = FREE; }
+    void set_used() { *_status = USED; }
+    void set_next_cell(int c) { *_next_cell = c; }
 
     friend bool operator==(const FatCell& lhs, const FatCell& rhs) {
-        return lhs.cell() == rhs.block();
+        return lhs.cell() == rhs.cell();
     }
 
     friend bool operator!=(const FatCell& lhs, const FatCell& rhs) {
-        return lhs.cell() != rhs.block();
+        return lhs.cell() != rhs.cell();
     }
 
     friend bool operator<(const FatCell& lhs, const FatCell& rhs) {
-        return lhs.cell() < rhs.block();
+        return lhs.cell() < rhs.cell();
     }
 
     friend bool operator<=(const FatCell& lhs, const FatCell& rhs) {
-        return lhs.cell() <= rhs.block();
+        return lhs.cell() <= rhs.cell();
     }
 
     friend bool operator>(const FatCell& lhs, const FatCell& rhs) {
-        return lhs.cell() > rhs.block();
+        return lhs.cell() > rhs.cell();
     }
 
     friend bool operator>=(const FatCell& lhs, const FatCell& rhs) {
-        return lhs.cell() >= rhs.block();
+        return lhs.cell() >= rhs.cell();
     }
 };
 
@@ -86,12 +90,11 @@ struct FatCell {
  * Class to representation of a Directory Entry in a disk block.
  *
  * Structure of Entry
- * |   name   | valid | type | dot | dotdot | dir ptr | file ptr | times...
- *   MAX_NAME   bool    bool   int    int       int       int      time_t
+ * |      name     | valid | type | dot | dotdot | dir ptr | file ptr | times...
+ *  char* MAX_NAME   bool    bool   int    int       int       int      time_t
  *
  * Default values when constructed with valid address:
  * name: null bytes
- * valid: true
  * type: ENTRY:DIR
  * dot:  ENTRY::ENDBLOCK
  * dotdot: ENTRY:ENDBLOCK
@@ -107,12 +110,11 @@ public:
 
     bool has_dirs() const { return dircell_index() > ENTRY::ENDBLOCK; }
     bool has_files() const { return filecell_index() > ENTRY::ENDBLOCK; }
-    bool is_valid() const { return _name != nullptr; }
+    bool valid() const { return _name != nullptr; }
     operator bool() const { return _name != nullptr; }  // explicit bool conv
     void clear() { _reset_address(nullptr); };
 
     std::string name() const { return std::string(_name); }
-    bool valid() const { return *_valid; }
     bool type() const { return *_type; }
     int dot() const { return *_dot; }
     int dotdot() const { return *_dotdot; }
@@ -129,7 +131,6 @@ public:
     // WARNING: will delete existing data!
     void init() {
         memset(_name, 0, MAX_NAME);
-        set_valid(true);
         set_type(ENTRY::DIR);
         set_dot(ENTRY::ENDBLOCK);
         set_dotdot(ENTRY::ENDBLOCK);
@@ -148,7 +149,6 @@ public:
         strncpy(_name, name.c_str(), name.size());
     }
 
-    void set_valid(bool valid) { *_valid = valid; }
     void set_type(bool type) { *_type = type; }
     void set_dot(int block) { *_dot = block; }
     void set_dotdot(int block) { *_dotdot = block; }
@@ -163,8 +163,7 @@ public:
 
     void _reset_address(char* address) {
         _name = address;
-        _valid = (bool*)(_name + MAX_NAME);
-        _type = _valid + 1;
+        _type = (bool*)(_name + MAX_NAME);
         _dot = (int*)(_type + 1);
         _dotdot = _dot + 1;
         _dircell_index = _dotdot + 1;
@@ -176,7 +175,6 @@ public:
 
 private:
     char* _name;
-    bool* _valid;
     bool* _type;
     int* _dot;
     int* _dotdot;
@@ -191,12 +189,11 @@ private:
  * Class to representation of a Directory Entry in a disk block.
  *
  * Structure of Entry
- * |   name   | valid | type | data ptr | times...
- *   MAX_NAME   bool    bool      int     time_t
+ * |      name      | valid | type | data ptr | times...
+ *  char* MAX_NAME    bool    bool      int     time_t
  *
  * Default values when constructed with valid address:
  * name: null bytes
- * valid: true
  * type: ENTRY:DIR
  * datacell_index: ENTRY:ENDBLOCK
  * size: bytes of all data links (does not include nul byte)
@@ -210,12 +207,12 @@ public:
     FileEntry(char* address = nullptr) { _reset_address(address); }
 
     bool has_data() const { return datacell_index() > ENTRY::ENDBLOCK; }
-    bool is_valid() const { return _name != nullptr; }
+    bool valid() const { return _name != nullptr; }
     operator bool() const { return _name != nullptr; }  // explicit bool conv
 
     std::string name() const { return std::string(_name); }
-    bool valid() const { return *_valid; }
     bool type() const { return *_type; }
+    int dot() const { return *_dot; }
     int datacell_index() const { return *_datacell_index; }
     int size() const { return *_size; }
     int data_blocks() const { return *_data_blocks; }
@@ -230,8 +227,8 @@ public:
     // WARNING: will delete existing data!
     void init() {
         memset(_name, 0, MAX_NAME);
-        set_valid(true);
         set_type(ENTRY::FILE);
+        set_dot(ENTRY::ENDBLOCK);
         set_datacell_index(ENTRY::ENDBLOCK);
         set_size(0);
         set_data_blocks(0);
@@ -248,8 +245,8 @@ public:
         strncpy(_name, name.c_str(), name.size());
     }
 
-    void set_valid(bool valid) { *_valid = valid; }
     void set_type(bool type) { *_type = type; }
+    void set_dot(int block) { *_dot = block; }
     void set_datacell_index(int cell) { *_datacell_index = cell; }
     void set_size(int size) {
         *_size = size;
@@ -267,9 +264,9 @@ public:
 
     void _reset_address(char* address) {
         _name = address;
-        _valid = (bool*)(_name + MAX_NAME);
-        _type = _valid + 1;
-        _datacell_index = (int*)(_type + 1);
+        _type = (bool*)(_name + MAX_NAME);
+        _dot = (int*)(_type + 1);
+        _datacell_index = _dot + 1;
         _size = _datacell_index + 1;
         _data_blocks = _size + 1;
         _created = (time_t*)(_data_blocks + 1);
@@ -279,8 +276,8 @@ public:
 
 private:
     char* _name;
-    bool* _valid;
     bool* _type;
+    int* _dot;
     int* _datacell_index;
     int* _size;
     int* _data_blocks;
@@ -360,7 +357,7 @@ private:
  ******************************************************************************/
 class Fat {
 public:
-    Fat(std::string name, int cells);
+    Fat(std::string name = std::string(), int cells = -1);
     ~Fat();
 
     bool create();                    // create FAT table on disk
@@ -372,45 +369,55 @@ public:
     std::size_t size() const;       // total name of fat cells
     std::size_t file_size() const;  // total bytes of fat file
 
-    void set_name(std::string name);
+    bool set_name(std::string name);
     void set_cells(int cells);
 
     // return FatCell to read/write data to
     FatCell get_cell(int index);
 
     // read cell by reference arguments
-    void read_cell(int index, int& cell, int& block);
+    void read_cell(int index, bool& free, int& cell);
 
     // write to fat cell
-    void write_cell(int index, int cell, int block);
+    void write_cell(int index, bool free, int cell);
 
 private:
-    std::string _name;   // file name
-    int _cells;          // number of cells
-    int* _file;          // mmap of file
-    int _fd;             // file descriptor
-    std::size_t _bytes;  // file size
-    void _close_fd();    // close file descriptor
-    void _unmap_file();  // unmap virtual memory from file
+    std::string _name;     // fat file base name
+    std::string _fatname;  // // full fat filename with extension
+    int _cells;            // number of cells
+    char* _file;           // mmap of file
+    int _fd;               // file descriptor
+    std::size_t _bytes;    // file size
+    void _close_fd();      // close file descriptor
+    void _unmap_file();    // unmap virtual memory from file
 };
 
 class FatFS {
 public:
-    FatFS(std::string name, std::size_t cylinders, std::size_t sectors);
+    FatFS(Disk* disk = nullptr);
+
+    // FILE SYSTEM INITIALIZATIONS!!!
+    bool set_disk(Disk* disk);  // set disk for file system to use
+    bool format();              // format disk
+    bool valid() const;         // check if FatFS instance is valid
+    void remove_filesystem();   // WARNING Will delete both disk and fat file!
 
     std::size_t size() const;        // size of FS in bytes
     std::size_t free_space() const;  // return unused bytes left in disk
+    std::size_t used_space() const;  // return used bytes in disk
+    bool full() const;               // if disk is full
+    std::string info() const;        // return string file system information
+    std::string size_info() const;   // return string only size info
     DirEntry current() const;        // return current directory entry
     void print_dirs();               // print directories at current dir
-    void print_files();              // print files at current dir
-
-    // WARNING Will delete both disk and fat file!
-    void remove_filesystem();
+    void print_dirs_str(std::string& output);   // a string of dir listing
+    void print_files();                         // print files at current dir
+    void print_files_str(std::string& output);  // string of file listing
 
     DirEntry add_dir(std::string name);     // add directory entry @ current dir
     FileEntry add_file(std::string name);   // add file entry @ current dir
-    void delete_dir(std::string name);      // delete dir entry @ current dir
-    void delete_file(std::string name);     // delete file entry @ current dir
+    bool delete_dir(std::string name);      // delete dir entry @ current dir
+    bool delete_file(std::string name);     // delete file entry @ current dir
     bool change_dir(std::string name);      // change current directory
     FileEntry find_file(std::string name);  // get file entry @ current dir
 
@@ -428,9 +435,7 @@ public:
 
 private:
     std::string _name;      // name of Fat file system
-    std::string _diskname;  // name of physical disk
-    std::string _fatname;   // name of physical fat file
-    Disk _disk;             // physical disk
+    Disk* _disk;            // physical disk
     Fat _fat;               // FAT table
     DirEntry _root;         // root directory entry
     DirEntry _current;      // current directory entry
@@ -447,8 +452,8 @@ private:
     FileEntry _find_file_at(DirEntry& dir_entry, std::string name);
 
     // delete directory of a specificed name
-    void _delete_dir_at_dir(DirEntry& dir_entry, std::string name);
-    void _delete_file_at_dir(DirEntry& dir_entry, std::string name);
+    bool _delete_dir_at_dir(DirEntry& dir_entry, std::string name);
+    bool _delete_file_at_dir(DirEntry& dir_entry, std::string name);
 
     // recursively delete subdirectories and files within this dir entry
     // does not delete dir_entry itself
@@ -458,7 +463,7 @@ private:
     void _free_file_data_blocks(FileEntry& file_entry);
 
     // mark given FatCell as free and push to free list
-    void _free_cell_and_block(FatCell& cell);
+    void _free_cell(FatCell& cell, int cell_index);
 
     // get last cell from entry
     FatCell _last_dircell_from_dir_entry(DirEntry& dir_entry);
