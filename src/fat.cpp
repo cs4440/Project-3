@@ -87,6 +87,12 @@ bool FatFS::load_disk() {
         int logical_blocks = *(int *)diskfile;
 
         if(fat_offset > 0 && block_offset > 0 && logical_blocks > 0) {
+            // error checks
+            if(fat_offset > FatFS::META_SZ) return false;
+            if(logical_blocks > (int)_disk->total_blocks()) return false;
+            if(((int)_disk->total_blocks() - logical_blocks) != block_offset)
+                return false;
+
             _block_offset = block_offset;
             _logical_blocks = logical_blocks;
 

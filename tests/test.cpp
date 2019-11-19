@@ -125,6 +125,17 @@ int main() {
     std::cout << "Data size: " << data.size() << std::endl;
     bytes = fatfs.write_file_data(fentry, data.c_str(), data.size());
 
+    std::cout << "\nReading data from: " << filename << std::endl;
+    buff = new char[fentry.size() + 1];
+    bytes = fatfs.read_file_data(fentry, buff, fentry.size());
+    buff[bytes] = '\0';
+    std::cout << buff << std::endl;
+
+    std::cout << "Bytes read: " << bytes << std::endl;
+    std::cout << "File size: " << fentry.size() << std::endl;
+
+    delete[] buff;
+
     fentry = fatfs.find_file(filename);
     std::cout << "\nWriting data to: " << filename << std::endl;
     data =
@@ -132,6 +143,17 @@ int main() {
         "fsfjlsertjwle4jte90dgudgiehtke4jto9923u434534546476567lkjljdrtzzzzzz";
     std::cout << "Data size: " << data.size() << std::endl;
     bytes = fatfs.write_file_data(fentry, data.c_str(), data.size());
+
+    std::cout << "\nReading data from: " << filename << std::endl;
+    buff = new char[fentry.size() + 1];
+    bytes = fatfs.read_file_data(fentry, buff, fentry.size());
+    buff[bytes] = '\0';
+    std::cout << buff << std::endl;
+
+    std::cout << "Bytes read: " << bytes << std::endl;
+    std::cout << "File size: " << fentry.size() << std::endl;
+
+    delete[] buff;
 
     fentry = fatfs.find_file(filename);
     std::cout << "\nWriting data to: " << filename << std::endl;

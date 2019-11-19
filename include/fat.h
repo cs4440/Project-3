@@ -88,6 +88,8 @@ struct FatCell {
 
 /*******************************************************************************
  * Class to representation of a Directory Entry in a disk block.
+ * Subdirectories (DirEntry's) are contained in dircell_index linked list.
+ * Files (FileEntry's) are contained in filecell_index linked list.
  *
  * Structure of Entry
  * |      name     | valid | type | dot | dotdot | dir ptr | file ptr | times...
@@ -98,8 +100,8 @@ struct FatCell {
  * type: ENTRY:DIR
  * dot:  ENTRY::ENDBLOCK
  * dotdot: ENTRY:ENDBLOCK
- * dircell_index: ENTRY:ENDBLOCK
- * filecell_index: ENTRY:ENDBLOCK
+ * dircell_index: ENTRY:ENDBLOCK, head pointer of linked list to DirEntry
+ * filecell_index: ENTRY:ENDBLOCK, head pointer of linked list to FileEntry
  * created: current time
  * last_accessed: current time
  * last_modified: current time
@@ -191,6 +193,7 @@ private:
 
 /*******************************************************************************
  * Class to representation of a Directory Entry in a disk block.
+ * File data blocks (DataEntry's) are contained in datacell_index linked list.
  *
  * Structure of Entry
  * |      name      | valid | type | data ptr | times...
@@ -199,7 +202,7 @@ private:
  * Default values when constructed with valid address:
  * name: null bytes
  * type: ENTRY:DIR
- * datacell_index: ENTRY:ENDBLOCK
+ * datacell_index: ENTRY:ENDBLOCK, head pointer link list to data blocks
  * size: bytes of all data links (does not include nul byte)
  * data_blocks: the number of data blocks in a disk, excluding Entry itself
  * created: current time
@@ -390,6 +393,39 @@ private:
     std::set<int> _free;
 };
 
+/*******************************************************************************
+ * Class to representation a FAT File System. It uses a FAT table to manage
+ * file and directory structures. The FAT table near the begining of a disk.
+ *
+ * Structure of formatted disk:
+ * | META DATA | FAT TABLE | LOGICAL DISK BLOCKS START HERE
+ *
+ * Meta data
+ * ---------
+ * int fat_offset: offset from disk where FAT table starts
+ * int _block_offset: disk block index offset to start data blocks
+ * int logical_blocks: the number of actual data blocks for in disk
+ *
+ * FAT TABLE
+ * ---------
+ * Fat table start at disk address + fat_offset
+ * Size is logical_blocks * FatCell::SIZE
+ *
+ * DATA BLOCKS
+ * -----------
+ * Data blocks start at _block_offset
+ *
+ * NOTE
+ * ----
+ * One-to-one relationship of FatCell index to Data blocks
+ * (index + block_offset) of FatCell to disk data block #
+ *
+ * Ex:
+ *  - index of FAT table = 3
+ *  - block offset = 5
+ *  - FAT[3] = FatCell index = 3 + 5 = 8
+ *  - Thus FatCell index of 8 corresponds to disk block of 8.
+ ******************************************************************************/
 class FatFS {
 public:
     typedef std::set<DirEntry, bool (*)(const DirEntry&, const DirEntry&)>
