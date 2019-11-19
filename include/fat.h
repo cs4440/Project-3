@@ -11,7 +11,6 @@
 #include <ctime>        // ctime(), time_t
 #include <iostream>     // stream
 #include <set>          // set
-#include <stack>        // stack
 #include <stdexcept>    // exception
 #include <string>       // string
 #include "disk.h"       // Disk class
@@ -370,39 +369,25 @@ bool cmp_file_name(const FileEntry& a, const FileEntry& b);
  ******************************************************************************/
 class Fat {
 public:
-    Fat(std::string name = std::string(), int cells = -1);
+    Fat(char* address = nullptr, int cells = -1, int cell_offset = -1);
     ~Fat();
 
-    bool create();                    // create FAT table on disk
-    bool open_fat(std::string name);  // load existing FAT table
-    bool remove_fat();  // remove FAT table and invalidate instance
+    bool create();    // create FAT table on disk
+    bool load_fat();  // load existing FAT table in disk
 
-    bool valid() const;             // check if this FAT table is valid
-    std::string name() const;       // name of fat file
-    std::size_t size() const;       // total name of fat cells
-    std::size_t file_size() const;  // total bytes of fat file
-
-    bool set_name(std::string name);
-    void set_cells(int cells);
+    bool valid() const;  // check if this FAT table is valid
+    std::size_t free_size() const;
 
     // return FatCell to read/write data to
     FatCell get_cell(int index);
 
-    // read cell by reference arguments
-    void read_cell(int index, bool& free, int& cell);
-
-    // write to fat cell
-    void write_cell(int index, bool free, int cell);
+    std::set<int>& free_blocks() { return _free; }
 
 private:
-    std::string _name;     // fat file base name
-    std::string _fatname;  // // full fat filename with extension
-    int _cells;            // number of cells
-    char* _file;           // mmap of file
-    int _fd;               // file descriptor
-    std::size_t _bytes;    // file size
-    void _close_fd();      // close file descriptor
-    void _unmap_file();    // unmap virtual memory from file
+    char* _file;       // mmap of file
+    int _cells;        // number of cells
+    int _cell_offset;  // starting cell index
+    std::set<int> _free;
 };
 
 class FatFS {
@@ -411,10 +396,14 @@ public:
         DirSet;
     typedef std::set<FileEntry, bool (*)(const FileEntry&, const FileEntry&)>
         FileSet;
+
+    enum { META_SZ = 3 * sizeof(int) };
+
     FatFS(Disk* disk = nullptr);
 
     // FILE SYSTEM INITIALIZATIONS!!!
     bool set_disk(Disk* disk);  // set disk for file system to use
+    bool load_disk();           // load formatted disk, else false
     bool format();              // format disk
     bool valid() const;         // check if FatFS instance is valid
     void remove_filesystem();   // WARNING Will delete both disk and fat file!
@@ -451,15 +440,16 @@ public:
     void remove_file_data(FileEntry& file_entry);
 
 private:
-    std::string _name;      // name of Fat file system
-    Disk* _disk;            // physical disk
-    Fat _fat;               // FAT table
-    DirEntry _root;         // root directory entry
-    DirEntry _current;      // current directory entry
-    std::stack<int> _free;  // queue of free cells -> free blocks
+    std::string _name;  // name of Fat file system
+    Disk* _disk;        // physical disk
+    Fat _fat;           // FAT table
+    DirEntry _root;     // root directory entry
+    DirEntry _current;  // current directory entry
+
+    int _logical_blocks;  // number of available blocks in disk after format
+    int _block_offset;    // block offset after format
 
     void _init_root();
-    void _init_free();
 
     // add dir or file at given directory
     DirEntry _add_dir_at(DirEntry target, std::string name);
@@ -492,10 +482,10 @@ private:
     void _free_cell(FatCell& cell, int cell_index);
 
     // get last cell from entry
-    FatCell _last_dircell_from_dir_entry(DirEntry& dir_entry);
-    FatCell _last_filecell_from_dir_entry(DirEntry& dir_entry);
-    FatCell _last_datacell_from_file_entry(FileEntry& file_entry);
-    FatCell _last_cell_from_cell(int start_cell);
+    FatCell _last_dircell_from_dir(DirEntry& dir_entry);
+    FatCell _last_filecell_from_dir(DirEntry& dir_entry);
+    FatCell _last_datacell_from_file(FileEntry& file_entry);
+    FatCell _last_cell_from_cell(int cell_offset);
 };
 
 }  // namespace fs

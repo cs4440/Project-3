@@ -14,7 +14,7 @@
 #include "../include/fat.h"
 
 int main() {
-    char *buff = nullptr;
+    char* buff = nullptr;
     int bytes = 0;
     fs::FileEntry fentry;
     std::string dirname, filename, path, output, data;
@@ -29,7 +29,8 @@ int main() {
 
     fs::FatFS fatfs;
     fatfs.set_disk(&disk);
-    fatfs.format();
+
+    if(!fatfs.load_disk()) fatfs.format();
 
     std::cout << "\nPrinting fatfs info:" << std::endl;
     std::cout << "----------------------" << std::endl;
@@ -120,9 +121,21 @@ int main() {
 
     fentry = fatfs.find_file(filename);
     std::cout << "\nWriting data to: " << filename << std::endl;
+    data = "Hello";
+    std::cout << "Data size: " << data.size() << std::endl;
+    bytes = fatfs.write_file_data(fentry, data.c_str(), data.size());
+
+    fentry = fatfs.find_file(filename);
+    std::cout << "\nWriting data to: " << filename << std::endl;
     data =
         "SOmasdfliajsdofjlaekjlajoidjfglidsjglj3242354o9ert9udfgidgkldjrflgijl0"
         "fsfjlsertjwle4jte90dgudgiehtke4jto9923u434534546476567lkjljdrtzzzzzz";
+    std::cout << "Data size: " << data.size() << std::endl;
+    bytes = fatfs.write_file_data(fentry, data.c_str(), data.size());
+
+    fentry = fatfs.find_file(filename);
+    std::cout << "\nWriting data to: " << filename << std::endl;
+    data = "Hello";
     std::cout << "Data size: " << data.size() << std::endl;
     bytes = fatfs.write_file_data(fentry, data.c_str(), data.size());
 
@@ -140,7 +153,16 @@ int main() {
 
     delete[] buff;
 
-    fatfs.remove_filesystem();
+    std::cout << "\nPrinting fatfs info:" << std::endl;
+    std::cout << "----------------------" << std::endl;
+    std::cout << fatfs.info() << std::endl;
+
+    std::cout << "\nListing at: " << fatfs.current().name() << std::endl;
+    std::cout << "------------" << std::endl;
+    fatfs.print_dirs();
+    fatfs.print_files();
+
+    // fatfs.remove_filesystem();
 
     return 0;
 }

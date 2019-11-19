@@ -79,40 +79,6 @@ private:
     void _unmap_file();  // unmap virtual memory from file
 };
 
-struct DiskCoord {
-    int cylinder;
-    int sector;
-    int block;
-
-    // CONSTRUCTOR
-    DiskCoord(int c, int s, int b = Disk::MAX_BLOCK)
-        : cylinder(c), sector(s), block(b) {}
-
-    friend bool operator==(const DiskCoord& lhs, const DiskCoord& rhs) {
-        return lhs.cylinder == rhs.cylinder && lhs.sector == rhs.sector;
-    }
-
-    friend bool operator!=(const DiskCoord& lhs, const DiskCoord& rhs) {
-        return lhs.cylinder != rhs.cylinder || lhs.sector != rhs.sector;
-    }
-
-    friend bool operator<(const DiskCoord& lhs, const DiskCoord& rhs) {
-        return lhs.cylinder < rhs.cylinder && lhs.sector < rhs.sector;
-    }
-
-    friend bool operator<=(const DiskCoord& lhs, const DiskCoord& rhs) {
-        return lhs.cylinder <= rhs.cylinder && lhs.sector <= rhs.sector;
-    }
-
-    friend bool operator>(const DiskCoord& lhs, const DiskCoord& rhs) {
-        return lhs.cylinder > rhs.cylinder && lhs.sector > rhs.sector;
-    }
-
-    friend bool operator>=(const DiskCoord& lhs, const DiskCoord& rhs) {
-        return lhs.cylinder >= rhs.cylinder && lhs.sector >= rhs.sector;
-    }
-};
-
 }  // namespace fs
 
 #endif  // DISK_H

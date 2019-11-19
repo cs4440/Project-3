@@ -83,7 +83,7 @@ void *connection_handler(void *socketfd) {
         "[L]ist current dirs/files, flag=0 minimal, flag=1 full: 'L [FLAG]'\n"
         "[R]ead a file: 'R [NAME]'\n"
         "[W]rite data to file: 'W [NAME] [DATA]'\n"
-        "[I]nformation of file system: name, valid, size (in bytes), etc"
+        "[I]nformation of file system: name, valid, size (in bytes), etc\n"
         "[U]nformat a filesystem and deletes disk\n\n";
     std::string need_create = "Please format filesystem with 'F' command";
     std::string disk_exists = "ERROR filesystem exists";
@@ -94,7 +94,7 @@ void *connection_handler(void *socketfd) {
     try {
         if(disk.open_disk(diskname)) {
             fatfs.set_disk(&disk);
-            fatfs.format();
+            fatfs.load_disk();
             welcome +=
                 "Filessytem exists in server. Using existing file system\n" +
                 fatfs.info();

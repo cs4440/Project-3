@@ -160,7 +160,7 @@ int Disk::fd() { return _fd; }
 
 char *Disk::file() { return _file; }
 
-char *Disk::file_at(int block) { return _file + (block * MAX_BLOCK); }
+char *Disk::file_at(int block) { return _file + (block * _max_block); }
 
 void Disk::set_cylinders(std::size_t c) {
     if(!valid()) _cylinders = c;
