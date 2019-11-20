@@ -6,10 +6,11 @@
 #include <sys/mman.h>   // mmap()
 #include <sys/stat.h>   // fstat
 #include <sys/types.h>  // struct stat
-#include <unistd.h>     // open
+#include <unistd.h>     // open()
 #include <cstring>      // strncpy(), memset()
 #include <ctime>        // ctime(), time_t
 #include <iostream>     // stream
+#include <queue>        // queue
 #include <set>          // set
 #include <stdexcept>    // exception
 #include <string>       // string
@@ -46,7 +47,7 @@ struct FatCell {
 
     bool valid() const { return _next_cell != nullptr; }
     bool has_next() const { return _next_cell != nullptr && *_next_cell > END; }
-    bool free() const { return *_next_cell == FREE; }
+    bool free() const { return *_next_cell <= FREE; }
     bool used() const { return *_next_cell > FREE; }
 
     // get cell/block data from address
@@ -107,6 +108,7 @@ public:
 
     bool has_dirs() const { return dircell_index() > ENTRY::ENDBLOCK; }
     bool has_files() const { return filecell_index() > ENTRY::ENDBLOCK; }
+    bool has_parent() const { return valid() && *_dotdot != ENTRY::ENDBLOCK; }
     bool valid() const { return _name != nullptr; }
     operator bool() const { return _name != nullptr; }  // explicit bool conv
     void clear() { _reset_address(nullptr); };
@@ -305,7 +307,7 @@ class DataEntry {
 public:
     DataEntry(char* address = nullptr) : _data(address) {}
 
-    bool is_valid() const { return _data != nullptr; }
+    bool valid() const { return _data != nullptr; }
     char* data() { return _data; }
     void clear() { memset(_data, 0, Disk::MAX_BLOCK); }
 
@@ -373,7 +375,8 @@ public:
     bool create();  // create FAT table on disk
     bool open();    // load existing FAT table in disk
 
-    bool valid() const;  // check if this FAT table is valid
+    bool valid() const;     // check if this FAT table is valid
+    operator bool() const;  // explicit bool conv
     std::size_t free_size() const;
 
     // return FatCell to read/write data to
@@ -458,7 +461,7 @@ public:
     FileEntry add_file(std::string name);   // add file entry @ current dir
     bool delete_dir(std::string name);      // delete dir entry @ current dir
     bool delete_file(std::string name);     // delete file entry @ current dir
-    bool change_dir(std::string name);      // change current directory
+    bool change_dir(std::string path);      // change current to path if valid
     FileEntry find_file(std::string name);  // get file entry @ current dir
 
     // read file data into data buffer of size
@@ -486,8 +489,8 @@ private:
     void _init_root();
 
     // add dir or file at given directory
-    DirEntry _add_dir_at(DirEntry target, std::string name);
-    FileEntry _add_file_at(DirEntry target, std::string name);
+    DirEntry _add_dir_at(DirEntry& target, std::string name);
+    FileEntry _add_file_at(DirEntry& target, std::string name);
 
     // get a set of all entry at given directory entry by comparison function
     void _dirs_at(DirEntry& dir_entry, DirSet& entries_set);
@@ -520,6 +523,11 @@ private:
     FatCell _last_filecell_from_dir(DirEntry& dir_entry);
     FatCell _last_datacell_from_file(FileEntry& file_entry);
     FatCell _last_cell_from_cell(int cell_offset);
+
+    // tokenize a path string and return a queue of name entries
+    void _tokenize_path(std::string path, std::queue<std::string>& entries);
+
+    DirEntry _parse_dir_entries(std::queue<std::string>& entries);
 };
 
 }  // namespace fs

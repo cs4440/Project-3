@@ -53,6 +53,8 @@ bool Fat::open() {
 
 bool Fat::valid() const { return _file != nullptr; }
 
+Fat::operator bool() const { return _file != nullptr; }
+
 std::size_t Fat::free_size() const { return _free.size(); }
 
 FatCell Fat::get_cell(int index) {
@@ -196,7 +198,7 @@ std::string FatFS::pwd() const {
     std::string path;
     DirEntry dir = _current;
 
-    if(dir.valid()) {
+    if(dir) {
         path = dir.name();
 
         while(dir.dotdot() != FatCell::END) {
@@ -291,11 +293,18 @@ bool FatFS::delete_file(std::string name) {
     return _delete_file_at_dir(_current, name);
 }
 
-bool FatFS::change_dir(std::string name) {
-    DirEntry find = _find_dir_at(_current, name);
+bool FatFS::change_dir(std::string path) {
+    DirEntry dir;
+    std::queue<std::string> entries;
 
-    if(find) {
-        _current = find;
+    // tokenize a path string to queue of named entries
+    _tokenize_path(path, entries);
+
+    // find a valid end point of the path of named entries
+    dir = _parse_dir_entries(entries);
+
+    if(dir) {
+        _current = dir;
         _current.update_last_accessed();
 
         return true;
@@ -313,7 +322,7 @@ std::size_t FatFS::read_file_data(FileEntry &file_entry, char *data,
     FatCell datacell;
     DataEntry data_entry;
 
-    if(_disk && file_entry.valid()) {
+    if(_disk && file_entry) {
         file_entry.update_last_accessed();
 
         if(file_entry.has_data()) {
@@ -347,7 +356,7 @@ std::size_t FatFS::write_file_data(FileEntry &file_entry, const char *data,
     DataEntry data_entry;
     std::set<int>::iterator it;
 
-    if(_disk && file_entry.valid()) {
+    if(_disk && file_entry) {
         // check if file system have enough space for new data
         if(size > this->free_space())
             return 0;
@@ -451,7 +460,7 @@ void FatFS::_init_root() {
 
 // DirEntry target: add Entry to this directory
 // return invalid Entry if can not add
-DirEntry FatFS::_add_dir_at(DirEntry target, std::string name) {
+DirEntry FatFS::_add_dir_at(DirEntry &target, std::string name) {
     DirEntry dir, find_dir;
     FileEntry find_file;
     std::set<int>::iterator it;
@@ -460,7 +469,7 @@ DirEntry FatFS::_add_dir_at(DirEntry target, std::string name) {
         throw std::range_error("File name size exceeded: " +
                                std::to_string(ENTRY::MAX_NAME - 1));
 
-    if(_disk && target.valid()) {
+    if(_disk && target) {
         // find if file name exists
         find_file = _find_file_at(target, name);
 
@@ -509,7 +518,7 @@ DirEntry FatFS::_add_dir_at(DirEntry target, std::string name) {
 
 // DirEntry target: add Entry to this directory
 // return invalid Entry if can not add
-FileEntry FatFS::_add_file_at(DirEntry target, std::string name) {
+FileEntry FatFS::_add_file_at(DirEntry &target, std::string name) {
     DirEntry find_dir;
     FileEntry file, find_file;
     std::set<int>::iterator it;
@@ -518,7 +527,7 @@ FileEntry FatFS::_add_file_at(DirEntry target, std::string name) {
         throw std::range_error("File name size exceeded: " +
                                std::to_string(ENTRY::MAX_NAME - 1));
 
-    if(_disk && target.valid()) {
+    if(_disk && target) {
         // check if dir name exists
         find_dir = _find_dir_at(target, name);
 
@@ -573,7 +582,7 @@ void FatFS::_dirs_at(DirEntry &dir_entry, DirSet &entries_set) {
     // clear directory if not empty
     entries_set.clear();
 
-    if(_disk && dir_entry.valid() && dir_entry.has_dirs()) {
+    if(_disk && dir_entry && dir_entry.has_dirs()) {
         entries_set.emplace(_disk->file_at(dir_entry.dircell_index()));
         dircell = _fat.get_cell(dir_entry.dircell_index());
 
@@ -592,7 +601,7 @@ void FatFS::_files_at(DirEntry &dir_entry, FileSet &entries_set) {
     // clear directory if not empty
     entries_set.clear();
 
-    if(_disk && dir_entry.valid() && dir_entry.has_files()) {
+    if(_disk && dir_entry && dir_entry.has_files()) {
         entries_set.emplace(_disk->file_at(dir_entry.filecell_index()));
         filecell = _fat.get_cell(dir_entry.filecell_index());
 
@@ -608,7 +617,7 @@ DirEntry FatFS::_find_dir_at(DirEntry &dir_entry, std::string name) {
     DirEntry dir, found;
     FatCell dircell;
 
-    if(_disk && dir_entry.valid()) {
+    if(_disk && dir_entry) {
         if(name == ".") {
             found = dir_entry;
         } else if(name == "..") {
@@ -644,7 +653,7 @@ FileEntry FatFS::_find_file_at(DirEntry &dir_entry, std::string name) {
     FileEntry file, found;
     FatCell filecell;
 
-    if(_disk && dir_entry.valid() && dir_entry.has_files()) {
+    if(_disk && dir_entry && dir_entry.has_files()) {
         file = FileEntry(_disk->file_at(dir_entry.filecell_index()));
         filecell = _fat.get_cell(dir_entry.filecell_index());
 
@@ -669,7 +678,7 @@ DirEntry FatFS::_find_dir_orlast_at(DirEntry &dir_entry, std::string name) {
     DirEntry dir;
     FatCell dircell;
 
-    if(_disk && dir_entry.valid()) {
+    if(_disk && dir_entry) {
         if(name == ".") {
             dir = dir_entry;
         } else if(name == "..") {
@@ -700,7 +709,7 @@ FileEntry FatFS::_find_file_orlast_at(DirEntry &dir_entry, std::string name) {
     FileEntry file;
     FatCell filecell;
 
-    if(_disk && dir_entry.valid() && dir_entry.has_files()) {
+    if(_disk && dir_entry && dir_entry.has_files()) {
         file = FileEntry(_disk->file_at(dir_entry.filecell_index()));
         filecell = _fat.get_cell(dir_entry.filecell_index());
 
@@ -720,7 +729,7 @@ bool FatFS::_delete_dir_at_dir(DirEntry &dir_entry, std::string name) {
     DirEntry dir;
     FatCell dircell, prevcell;
 
-    if(_disk && dir_entry.valid() && dir_entry.has_dirs()) {
+    if(_disk && dir_entry && dir_entry.has_dirs()) {
         dir = DirEntry(_disk->file_at(dir_entry.dircell_index()));
         dircell = _fat.get_cell(dir_entry.dircell_index());
 
@@ -765,7 +774,7 @@ bool FatFS::_delete_file_at_dir(DirEntry &dir_entry, std::string name) {
     FileEntry file;
     FatCell filecell, prevcell;
 
-    if(_disk && dir_entry.valid() && dir_entry.has_files()) {
+    if(_disk && dir_entry && dir_entry.has_files()) {
         file = FileEntry(_disk->file_at(dir_entry.filecell_index()));
         filecell = _fat.get_cell(dir_entry.filecell_index());
 
@@ -810,7 +819,7 @@ bool FatFS::_delete_file_at_dir(DirEntry &dir_entry, std::string name) {
 }
 
 void FatFS::_free_dir_contents(DirEntry &dir_entry) {
-    if(_disk && dir_entry.valid()) {
+    if(_disk && dir_entry) {
         while(dir_entry.has_dirs()) {
             // get sub directories
             DirEntry dir = DirEntry(_disk->file_at(dir_entry.dircell_index()));
@@ -843,7 +852,7 @@ void FatFS::_free_file_data_blocks(FileEntry &file_entry) {
     int datacell_index = FatCell::END;
     FatCell datacell;
 
-    while(file_entry.valid() && file_entry.has_data()) {
+    while(file_entry && file_entry.has_data()) {
         // get datacell from data pointer in FileEntry
         datacell_index = file_entry.datacell_index();
         datacell = _fat.get_cell(file_entry.datacell_index());
@@ -883,6 +892,53 @@ FatCell FatFS::_last_cell_from_cell(int start_cell) {
     while(current.has_next()) current = _fat.get_cell(current.cell());
 
     return current;
+}
+
+void FatFS::_tokenize_path(std::string path, std::queue<std::string> &entries) {
+    char *token = nullptr;
+
+    while(!entries.empty()) entries.pop();
+
+    if(!path.empty()) {
+        char *cstr = new char[path.length() + 1]();
+        strncpy(cstr, path.c_str(), path.size());
+
+        if(cstr[0] == '/') {
+            entries.push("/");
+            token = strtok(cstr + 1, "/");
+        } else
+            token = strtok(cstr, "/");
+
+        while(token != NULL) {
+            entries.push(token);
+            token = strtok(NULL, "/");
+        }
+
+        delete[] cstr;
+    }
+}
+
+DirEntry FatFS::_parse_dir_entries(std::queue<std::string> &entries) {
+    DirEntry dir = _current;
+    std::string entry_name;
+
+    while(!entries.empty()) {
+        entry_name = entries.front();
+        entries.pop();
+
+        if(entry_name == "/")
+            dir = _root;
+        else if(entry_name == ".") {
+            // do nothing
+        } else if(entry_name == "..") {
+            if(dir.has_parent()) dir = DirEntry(_disk->file_at(dir.dotdot()));
+        } else {
+            dir = _find_dir_at(dir, entry_name);
+
+            if(!dir) break;
+        }
+    }
+    return dir;
 }
 
 }  // namespace fs
