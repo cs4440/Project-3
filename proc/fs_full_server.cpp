@@ -47,6 +47,9 @@ void cd(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs);
 // list path contents
 void ls(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs);
 
+// print working directory
+void pwd(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs);
+
 }  // namespace fs
 
 int main(int argc, char *argv[]) {
@@ -118,15 +121,16 @@ void *connection_handler(void *socketfd) {
         "mkfs [CYLINDER] [SECTOR]\tCreate filesystem size of cylinder x "
         "sector\n"
         "rmfs\t\t\t\tRemove filesystem\n"
-        "mkdir [NAME]\t\t\tCreate a directory entry of NAME\n"
-        "rmdir [NAME]\t\t\tRemove directory of NAME\n"
-        "mk [NAME]\t\t\tCreate a file entry of NAME\n"
-        "rm [NAME]\t\t\tRemove file of NAME\n"
-        "read [NAME]\t\t\tRead data of file NAME\n"
-        "write [NAME] [DATA]\t\tWrite data to file of NAME\n"
+        "mkdir [NAME]\t\t\tCreate a directory entry\n"
+        "rmdir [NAME]\t\t\tRemove a directory\n"
+        "mk [NAME]\t\t\tCreate a file entry\n"
+        "rm [NAME]\t\t\tRemove a file\n"
+        "read [NAME]\t\t\tRead file data\n"
+        "write [NAME] [DATA]\t\tWrite data to file\n"
         "cd [PATH]\t\t\tChange directory to PATH\n"
         "ls\t\t\t\tList path contents\n"
-        "info\t\t\t\tDisplay current file system information\n\n";
+        "pwd\t\t\t\tList path contents\n"
+        "info\t\t\t\tDisplay current filesystem information\n\n";
     std::string need_create =
         "Please create and format filesystem with 'mkfs' command";
     std::string disk_exists = "ERROR filesystem exists";
@@ -192,6 +196,8 @@ void *connection_handler(void *socketfd) {
                     fs::cd(sockfd, tokens, fatfs);
                 else if(tokens[0] == "ls" || tokens[0] == "L")
                     fs::ls(sockfd, tokens, fatfs);
+                else if(tokens[0] == "pwd")
+                    fs::pwd(sockfd, tokens, fatfs);
                 else if(tokens[0] == "info" || tokens[0] == "I")
                     sock::send_msg(sockfd, fatfs.info());
                 // Unknown commands
@@ -258,9 +264,7 @@ void rmdir(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs) {
     if(tokens.size() < 2)
         sock::send_msg(sockfd, "ERROR Insufficient arguments for rmdir");
     else {
-        bool is_deleted = fatfs.delete_dir(tokens[1]);
-
-        if(is_deleted)
+        if(fatfs.delete_dir(tokens[1]))
             sock::send_msg(sockfd, "0 Deleted");
         else
             sock::send_msg(sockfd, "1 No directory exist");
@@ -288,9 +292,7 @@ void rm(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs) {
     if(tokens.size() < 2)
         sock::send_msg(sockfd, "ERROR Insufficient arguments for rm");
     else {
-        bool is_deleted = fatfs.delete_file(tokens[1]);
-
-        if(is_deleted)
+        if(fatfs.delete_file(tokens[1]))
             sock::send_msg(sockfd, "0 Deleted");
         else
             sock::send_msg(sockfd, "1 No file exist");
@@ -345,8 +347,10 @@ void cd(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs) {
         sock::send_msg(sockfd, "ERROR Insufficient arguments for cd");
     else {
         if(fatfs.valid()) {
-            fatfs.change_dir(tokens[1]);
-            sock::send_msg(sockfd, "");
+            if(fatfs.change_dir(tokens[1]))
+                sock::send_msg(sockfd, "");
+            else
+                sock::send_msg(sockfd, "No directory exists");
         } else
             sock::send_msg(sockfd, "No file system");
     }
@@ -363,6 +367,13 @@ void ls(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs) {
     fatfs.print_files_str(output);
 
     sock::send_msg(sockfd, output);
+}
+
+void pwd(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs) {
+    if(fatfs.valid())
+        sock::send_msg(sockfd, fatfs.pwd());
+    else
+        sock::send_msg(sockfd, "No filesystem");
 }
 
 }  // namespace fs

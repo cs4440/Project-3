@@ -443,15 +443,17 @@ public:
     std::size_t free_space() const;  // return unused bytes left in disk
     std::size_t used_space() const;  // return used bytes in disk
     bool full() const;               // if disk is full
-    std::string name() const;
-    std::string info() const;       // return string file system information
-    std::string size_info() const;  // return string only size info
-    DirEntry current() const;       // return current directory entry
-    void print_dirs();              // print directories at current dir
+    std::string name() const;        // name of the file system
+    std::string info() const;        // return string filesystem info
+    std::string size_info() const;   // return string only size info
+    std::string pwd() const;         // print working directory
+    DirEntry current() const;        // return current directory entry
+    void print_dirs();               // print directories at current dir
     void print_dirs_str(std::string& output);   // a string of dir listing
     void print_files();                         // print files at current dir
     void print_files_str(std::string& output);  // string of file listing
 
+    void set_name(std::string name);
     DirEntry add_dir(std::string name);     // add directory entry @ current dir
     FileEntry add_file(std::string name);   // add file entry @ current dir
     bool delete_dir(std::string name);      // delete dir entry @ current dir

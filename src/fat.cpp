@@ -192,6 +192,25 @@ std::string FatFS::info() const {
            '\n' + size_info();
 }
 
+std::string FatFS::pwd() const {
+    std::string path;
+    DirEntry dir = _current;
+
+    if(dir.valid()) {
+        path = dir.name();
+
+        while(dir.dotdot() != FatCell::END) {
+            dir = DirEntry(_disk->file_at(dir.dotdot()));
+
+            if(dir.name() != "/")
+                path = dir.name() + "/" + path;
+            else
+                path = dir.name() + path;
+        }
+    }
+    return path;
+}
+
 std::string FatFS::size_info() const {
     return "Logical disk size: " + std::to_string(size()) + '\n' +
            "Free space (bytes): " + std::to_string(free_space()) + '\n' +
@@ -253,6 +272,8 @@ void FatFS::remove() {
     _name.clear();
     _fat.free_blocks() = std::set<int>();
 }
+
+void FatFS::set_name(std::string name) { _name = name; }
 
 DirEntry FatFS::add_dir(std::string name) {
     return _add_dir_at(_current, name);

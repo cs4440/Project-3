@@ -199,6 +199,10 @@ int main() {
     fatfs.print_files_str(output);
     std::cout << output << std::endl;
 
+    std::cout << "\nPWD at: " << fatfs.current().name() << std::endl;
+    output = fatfs.pwd();
+    std::cout << output << std::endl;
+
     // fatfs.remove_filesystem();
 
     return 0;
