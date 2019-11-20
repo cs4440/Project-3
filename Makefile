@@ -18,8 +18,12 @@ BASIC_SERVER    := basic_client basic_server
 DIR_LISTING     := dir_listing_client dir_listing_server
 DISK_SERVER     := $(UTILS) $(PARSER) $(SOCKET) $(DISK)\
                    disk_client disk_client_rand disk_server
-BASIC_FS        := $(UTILS) $(PARSER) $(SOCKET) $(FS) fs_client fs_server
-ALL             := $(BASIC_SERVER) $(DIR_LISTING) $(DISK_SERVER) $(BASIC_FS)
+FS_BASIC        := $(UTILS) $(PARSER) $(SOCKET) $(FS) fs_basic_client\
+                   fs_basic_server
+FS_FULL         := $(UTILS) $(PARSER) $(SOCKET) $(FS) fs_full_client\
+                   fs_full_server
+ALL             := $(BASIC_SERVER) $(DIR_LISTING) $(DISK_SERVER) $(FS_BASIC)\
+                   $(FS_FULL)
                    
 
 # $@ targt name
@@ -81,20 +85,36 @@ disk_server: disk_server.o $(PARSER) $(DISK) $(SOCKET)
 disk_server.o: $(PROC)/disk_server.cpp
 	$(CXX) $(CXXFLAGS) -c $<
 
-# FILESYSTEM CLIENT/SERVER
+# BASIC FILESYSTEM CLIENT/SERVER
 
-basic-fs: $(BASIC_FS)
+fs-basic: $(FS_BASIC)
 
-fs_client: fs_client.o $(SOCKET)
+fs_basic_client: fs_basic_client.o $(SOCKET)
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
-fs_client.o: $(PROC)/fs_client.cpp
+fs_basic_client.o: $(PROC)/fs_basic_client.cpp
 	$(CXX) $(CXXFLAGS) -c $<
 
-fs_server: fs_server.o  $(PARSER) $(FS) $(SOCKET)
+fs_basic_server: fs_basic_server.o  $(PARSER) $(FS) $(SOCKET)
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
-fs_server.o: $(PROC)/fs_server.cpp
+fs_basic_server.o: $(PROC)/fs_basic_server.cpp
+	$(CXX) $(CXXFLAGS) -c $<
+
+# FULL FILESYSTEM CLIENT/SERVER
+
+fs-full: $(FS_FULL)
+
+fs_full_client: fs_full_client.o $(SOCKET)
+	$(CXX) -o $@ $^ $(LDFLAGS)
+
+fs_full_client.o: $(PROC)/fs_full_client.cpp
+	$(CXX) $(CXXFLAGS) -c $<
+
+fs_full_server: fs_full_server.o  $(PARSER) $(FS) $(SOCKET)
+	$(CXX) -o $@ $^ $(LDFLAGS)
+
+fs_full_server.o: $(PROC)/fs_full_server.cpp
 	$(CXX) $(CXXFLAGS) -c $<
 
 # UTILS

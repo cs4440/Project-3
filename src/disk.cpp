@@ -28,7 +28,7 @@ bool Disk::create() {
     // if file doesn't exist
     if(stat(_disk_name.c_str(), &sb) != 0) {
         // open and create file
-        _fd = open(_disk_name.c_str(), O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+        _fd = ::open(_disk_name.c_str(), O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
 
         if(_fd == -1)
             throw std::runtime_error("Error creating Disk file: create");
@@ -64,26 +64,25 @@ bool Disk::create() {
     return is_created;
 }
 
-bool Disk::open_disk(std::string n) {
+bool Disk::open(std::string n) {
     bool is_opened = false;
     std::string diskname = n + ".disk";
     struct stat sb;  // file stats
 
     // remove this disk if exists
-    if(_fd > -1) remove_disk();
+    if(_fd > -1) Disk::remove();
 
     // if file exists
     if(stat(diskname.c_str(), &sb) == 0) {
         // open existing file
-        _fd = open(diskname.c_str(), O_RDWR, S_IRUSR | S_IWUSR);
+        _fd = ::open(diskname.c_str(), O_RDWR, S_IRUSR | S_IWUSR);
 
-        if(_fd == -1)
-            throw std::runtime_error("Error opening Disk file: open_disk");
+        if(_fd == -1) throw std::runtime_error("Error opening Disk file: open");
 
         // check if file stats is consisent
         if(fstat(_fd, &sb) == -1)
             throw std::runtime_error(
-                "Error checking Disk file descriptor: open_disk");
+                "Error checking Disk file descriptor: open");
 
         // map phyhsical file to memory
         _pfile = (char *)mmap(NULL, sb.st_size, PROT_READ | PROT_WRITE,
@@ -108,12 +107,12 @@ bool Disk::open_disk(std::string n) {
     return is_opened;
 }
 
-bool Disk::remove_disk() {
+bool Disk::remove() {
     bool is_removed = false;
 
     _unmap_file();  // unmap virtual memory from file
     _close_fd();    // close file descriptor
-    if(remove(_disk_name.c_str()) == 0) is_removed = true;
+    if(::remove(_disk_name.c_str()) == 0) is_removed = true;
     _physical_bytes = _logical_bytes = _cylinders = _sectors = 0;
 
     return is_removed;

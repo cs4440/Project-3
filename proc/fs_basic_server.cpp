@@ -92,9 +92,9 @@ void *connection_handler(void *socketfd) {
 
     // try to open disk if disk file exists
     try {
-        if(disk.open_disk(diskname)) {
+        if(disk.open(diskname)) {
             fatfs.set_disk(&disk);
-            fatfs.load_disk();
+            fatfs.open_disk();
             welcome +=
                 "Filessytem exists in server. Using existing file system\n" +
                 fatfs.info();
@@ -230,7 +230,7 @@ void *connection_handler(void *socketfd) {
                         }
                     }
                 } else if(tokens[0] == "U") {
-                    fatfs.remove_filesystem();
+                    fatfs.remove();
                     sock::send_msg(sockfd, "File system and disk removed");
                 }
                 // Unknown commands

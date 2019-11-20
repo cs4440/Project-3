@@ -24,10 +24,10 @@ public:
     ~Disk();
 
     // DISK INITIALIZATIONS !!!
-    bool create();                  // create Disk
-    bool open_disk(std::string n);  // initialize Disk from existing file
-    bool remove_disk();             // remove disk file from system
-    bool valid() const;             // check if disk is valid
+    bool create();             // create Disk
+    bool open(std::string n);  // initialize Disk from existing file
+    bool remove();             // remove disk file from system
+    bool valid() const;        // check if disk is valid
 
     std::size_t cylinder() const;
     std::size_t sector() const;

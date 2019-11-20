@@ -24,13 +24,13 @@ int main() {
     std::cout << "\nCreating disk and filesystem" << std::endl;
 
     if(!disk.create()) {
-        disk.open_disk(name);
+        disk.open(name);
     }
 
     fs::FatFS fatfs;
     fatfs.set_disk(&disk);
 
-    if(!fatfs.load_disk()) fatfs.format();
+    if(!fatfs.open_disk()) fatfs.format();
 
     std::cout << "\nPrinting fatfs info:" << std::endl;
     std::cout << "----------------------" << std::endl;
@@ -183,6 +183,21 @@ int main() {
     std::cout << "------------" << std::endl;
     fatfs.print_dirs();
     fatfs.print_files();
+
+    dirname = "Dir1 @ root";
+    std::cout << "\nChanging directory: " << dirname << std::endl;
+    fatfs.change_dir(dirname);
+
+    std::cout << "\nPrinting fatfs info:" << std::endl;
+    std::cout << "----------------------" << std::endl;
+    std::cout << fatfs.info() << std::endl;
+
+    std::cout << "\nListing at: " << fatfs.current().name() << std::endl;
+    std::cout << "------------" << std::endl;
+    output.clear();
+    fatfs.print_dirs_str(output);
+    fatfs.print_files_str(output);
+    std::cout << output << std::endl;
 
     // fatfs.remove_filesystem();
 

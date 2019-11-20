@@ -370,8 +370,8 @@ public:
     Fat(char* address = nullptr, int cells = -1, int cell_offset = -1);
     ~Fat();
 
-    bool create();    // create FAT table on disk
-    bool load_fat();  // load existing FAT table in disk
+    bool create();  // create FAT table on disk
+    bool open();    // load existing FAT table in disk
 
     bool valid() const;  // check if this FAT table is valid
     std::size_t free_size() const;
@@ -434,19 +434,20 @@ public:
 
     // FILE SYSTEM INITIALIZATIONS!!!
     bool set_disk(Disk* disk);  // set disk for file system to use
-    bool load_disk();           // load formatted disk, else false
+    bool open_disk();           // open formatted disk, false if not formatted
     bool format();              // format disk
     bool valid() const;         // check if FatFS instance is valid
-    void remove_filesystem();   // WARNING Will delete both disk and fat file!
+    void remove();              // WARNING Will delete both disk and fat file!
 
     std::size_t size() const;        // size of FS in bytes
     std::size_t free_space() const;  // return unused bytes left in disk
     std::size_t used_space() const;  // return used bytes in disk
     bool full() const;               // if disk is full
-    std::string info() const;        // return string file system information
-    std::string size_info() const;   // return string only size info
-    DirEntry current() const;        // return current directory entry
-    void print_dirs();               // print directories at current dir
+    std::string name() const;
+    std::string info() const;       // return string file system information
+    std::string size_info() const;  // return string only size info
+    DirEntry current() const;       // return current directory entry
+    void print_dirs();              // print directories at current dir
     void print_dirs_str(std::string& output);   // a string of dir listing
     void print_files();                         // print files at current dir
     void print_files_str(std::string& output);  // string of file listing

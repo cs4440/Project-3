@@ -34,7 +34,7 @@ bool Fat::create() {
         return false;
 }
 
-bool Fat::load_fat() {
+bool Fat::open() {
     if(_file) {
         FatCell cell;
         char *file = _file;
@@ -74,7 +74,7 @@ bool FatFS::set_disk(Disk *disk) {
         return false;
 }
 
-bool FatFS::load_disk() {
+bool FatFS::open_disk() {
     if(_disk) {
         char *diskfile = _disk->file();
 
@@ -100,7 +100,7 @@ bool FatFS::load_disk() {
             char *fat_address = _disk->file() + fat_offset;
             _fat = Fat(fat_address, _logical_blocks, _block_offset);
 
-            if(_fat.load_fat()) {
+            if(_fat.open()) {
                 // root entry always at begining of block offset
                 // get root entry at block offset
                 _root = _current = DirEntry(_disk->file_at(block_offset));
@@ -178,6 +178,8 @@ std::size_t FatFS::used_space() const {
 
 bool FatFS::full() const { return _fat.free_size() == 0; }
 
+std::string FatFS::name() const { return _name; }
+
 std::size_t FatFS::free_space() const {
     if(_disk)
         return _fat.free_size() * _disk->max_block();
@@ -246,8 +248,8 @@ void FatFS::print_files_str(std::string &output) {
     }
 }
 
-void FatFS::remove_filesystem() {
-    if(_disk) _disk->remove_disk();
+void FatFS::remove() {
+    if(_disk) _disk->remove();
     _name.clear();
     _fat.free_blocks() = std::set<int>();
 }
