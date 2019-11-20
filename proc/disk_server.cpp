@@ -88,7 +88,7 @@ void *connection_handler(void *socketfd) {
 
     // try to open disk if disk file exists
     try {
-        if(disk.open_disk(diskname))
+        if(disk.open(diskname))
             welcome += "Disk exists in system. Using existing disk: " +
                        std::to_string(disk.cylinder()) + " " +
                        std::to_string(disk.sector());
@@ -152,7 +152,7 @@ void *connection_handler(void *socketfd) {
                 }
                 // Remove disk
                 else if(tokens[0] == "D") {
-                    if(disk.remove_disk())
+                    if(disk.remove())
                         sock::send_msg(sockfd, "1");
                     else
                         sock::send_msg(sockfd, "0");
