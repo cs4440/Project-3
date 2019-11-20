@@ -10,7 +10,7 @@
 #include <cstring>      // strncpy(), memset()
 #include <ctime>        // ctime(), time_t
 #include <iostream>     // stream
-#include <queue>        // queue
+#include <list>         // list
 #include <set>          // set
 #include <stdexcept>    // exception
 #include <string>       // string
@@ -108,7 +108,7 @@ public:
 
     bool has_dirs() const { return dircell_index() > ENTRY::ENDBLOCK; }
     bool has_files() const { return filecell_index() > ENTRY::ENDBLOCK; }
-    bool has_parent() const { return valid() && *_dotdot != ENTRY::ENDBLOCK; }
+    bool has_parent() const { return dotdot() != ENTRY::ENDBLOCK; }
     bool valid() const { return _name != nullptr; }
     operator bool() const { return _name != nullptr; }  // explicit bool conv
     void clear() { _reset_address(nullptr); };
@@ -378,6 +378,7 @@ public:
     bool valid() const;     // check if this FAT table is valid
     operator bool() const;  // explicit bool conv
     std::size_t free_size() const;
+    std::size_t full() const;
 
     // return FatCell to read/write data to
     FatCell get_cell(int index);
@@ -457,12 +458,12 @@ public:
     void print_files_str(std::string& output);  // string of file listing
 
     void set_name(std::string name);
-    DirEntry add_dir(std::string name);     // add directory entry @ current dir
-    FileEntry add_file(std::string name);   // add file entry @ current dir
-    bool delete_dir(std::string name);      // delete dir entry @ current dir
-    bool delete_file(std::string name);     // delete file entry @ current dir
-    bool change_dir(std::string path);      // change current to path if valid
-    FileEntry find_file(std::string name);  // get file entry @ current dir
+    DirEntry add_dir(std::string path);     // add last entry in path
+    FileEntry add_file(std::string path);   // add last entry in path
+    bool delete_dir(std::string path);      // remove last entry in path
+    bool delete_file(std::string path);     // remove last entry in path
+    bool change_dir(std::string path);      // change to path if valid
+    FileEntry find_file(std::string path);  // find last entry in path
 
     // read file data into data buffer of size
     // returns successful bytes read
@@ -524,10 +525,10 @@ private:
     FatCell _last_datacell_from_file(FileEntry& file_entry);
     FatCell _last_cell_from_cell(int cell_offset);
 
-    // tokenize a path string and return a queue of name entries
-    void _tokenize_path(std::string path, std::queue<std::string>& entries);
+    // tokenize a path string and return a list of name entries
+    void _tokenize_path(std::string path, std::list<std::string>& entries);
 
-    DirEntry _parse_dir_entries(std::queue<std::string>& entries);
+    DirEntry _parse_dir_entries(std::list<std::string>& entries);
 };
 
 }  // namespace fs

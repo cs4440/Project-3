@@ -247,15 +247,14 @@ void mkdir(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs) {
     if(tokens.size() < 2)
         sock::send_msg(sockfd, "ERROR Insufficient arguments for mkdir");
     else {
-        if(fatfs.full() || tokens[1].size() > fs::MAX_NAME)
-            sock::send_msg(sockfd, "2");
-        else {
-            fs::DirEntry dir = fatfs.add_dir(tokens[1]);
+        try {
+            fatfs.add_dir(tokens[1]);
+            sock::send_msg(sockfd, "0 Created");
 
-            if(dir.valid())
-                sock::send_msg(sockfd, "0 Created");
-            else
-                sock::send_msg(sockfd, "1 Directory exists");
+        } catch(const std::invalid_argument &e) {
+            sock::send_msg(sockfd, "1 " + std::string(e.what()));
+        } catch(const std::exception &e) {
+            sock::send_msg(sockfd, "2 " + std::string(e.what()));
         }
     }
 }
@@ -267,7 +266,7 @@ void rmdir(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs) {
         if(fatfs.delete_dir(tokens[1]))
             sock::send_msg(sockfd, "0 Deleted");
         else
-            sock::send_msg(sockfd, "1 No directory exist");
+            sock::send_msg(sockfd, "1 No such file or directory");
     }
 }
 
@@ -275,15 +274,14 @@ void mk(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs) {
     if(tokens.size() < 2)
         sock::send_msg(sockfd, "ERROR Insufficient arguments for mkfile");
     else {
-        if(fatfs.full() || tokens[1].size() > fs::MAX_NAME)
-            sock::send_msg(sockfd, "2");
-        else {
-            fs::FileEntry file = fatfs.add_file(tokens[1]);
+        try {
+            fatfs.add_file(tokens[1]);
+            sock::send_msg(sockfd, "0 Created");
 
-            if(file.valid())
-                sock::send_msg(sockfd, "0 Created");
-            else
-                sock::send_msg(sockfd, "1 File exists");
+        } catch(const std::invalid_argument &e) {
+            sock::send_msg(sockfd, "1 " + std::string(e.what()));
+        } catch(const std::exception &e) {
+            sock::send_msg(sockfd, "2 " + std::string(e.what()));
         }
     }
 }
@@ -295,7 +293,7 @@ void rm(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs) {
         if(fatfs.delete_file(tokens[1]))
             sock::send_msg(sockfd, "0 Deleted");
         else
-            sock::send_msg(sockfd, "1 No file exist");
+            sock::send_msg(sockfd, "1 No such file or directory");
     }
 }
 
@@ -303,14 +301,14 @@ void read(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs) {
     if(tokens.size() < 2)
         sock::send_msg(sockfd, "ERROR Insufficient arguments for read");
     else {
-        fs::FileEntry fentry = fatfs.find_file(tokens[1]);
+        fs::FileEntry file = fatfs.find_file(tokens[1]);
 
-        if(!fentry.valid())
+        if(!file)
             sock::send_msg(sockfd, "1 No file exist");
         else {
             int bytes = 0;
-            char *data = new char[fentry.size() + 1];
-            bytes = fatfs.read_file_data(fentry, data, fentry.size());
+            char *data = new char[file.size() + 1];
+            bytes = fatfs.read_file_data(file, data, file.size());
             data[bytes] = '\0';
 
             sock::send_msg(sockfd, "0 " + std::to_string(bytes) + " " + data);
@@ -327,12 +325,12 @@ void write(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs) {
         if(fatfs.full())
             sock::send_msg(sockfd, "2");
         else {
-            fs::FileEntry fentry = fatfs.find_file(tokens[1]);
+            fs::FileEntry file = fatfs.find_file(tokens[1]);
 
-            if(!fentry.valid())
+            if(!file)
                 sock::send_msg(sockfd, "1 No file exist");
             else {
-                fatfs.write_file_data(fentry, tokens[2].c_str(),
+                fatfs.write_file_data(file, tokens[2].c_str(),
                                       tokens[2].size());
 
                 sock::send_msg(sockfd, "0");
@@ -350,9 +348,9 @@ void cd(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs) {
             if(fatfs.change_dir(tokens[1]))
                 sock::send_msg(sockfd, "");
             else
-                sock::send_msg(sockfd, "No directory exists");
+                sock::send_msg(sockfd, "1 No such directory");
         } else
-            sock::send_msg(sockfd, "No file system");
+            sock::send_msg(sockfd, "1 No filesystem");
     }
 }
 

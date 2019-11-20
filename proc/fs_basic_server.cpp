@@ -134,15 +134,16 @@ void *connection_handler(void *socketfd) {
                         sock::send_msg(sockfd,
                                        "ERROR Insufficient arguments for C");
                     else {
-                        if(fatfs.full() || tokens[1].size() > fs::MAX_NAME)
-                            sock::send_msg(sockfd, "2");
-                        else {
-                            fs::FileEntry file = fatfs.add_file(tokens[1]);
+                        try {
+                            fatfs.add_file(tokens[1]);
+                            sock::send_msg(sockfd, "0 Created");
 
-                            if(file.valid())
-                                sock::send_msg(sockfd, "0 Created");
-                            else
-                                sock::send_msg(sockfd, "1 File exists");
+                        } catch(const std::invalid_argument &e) {
+                            sock::send_msg(sockfd,
+                                           "1 " + std::string(e.what()));
+                        } catch(const std::exception &e) {
+                            sock::send_msg(sockfd,
+                                           "2 " + std::string(e.what()));
                         }
                     }
                 } else if(tokens[0] == "D") {

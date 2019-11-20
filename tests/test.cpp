@@ -14,7 +14,7 @@
 #include "../include/fat.h"
 
 int main() {
-    char* buff = nullptr;
+    char *buff = nullptr;
     int bytes = 0;
     fs::FileEntry fentry;
     std::string dirname, filename, path, output, data;
@@ -43,7 +43,11 @@ int main() {
 
     dirname = "Dir1 @ root";
     std::cout << "\nAdding directory: " << dirname << std::endl;
-    fatfs.add_dir(dirname);
+    try {
+        fatfs.add_dir(dirname);
+    } catch(const std::exception &e) {
+        std::cout << "Cannot add: " << e.what() << std::endl;
+    }
 
     std::cout << "\nPrinting fatfs info:" << std::endl;
     std::cout << "----------------------" << std::endl;
@@ -56,7 +60,11 @@ int main() {
 
     dirname = "Dir2 @ root";
     std::cout << "\nAdding directory: " << dirname << std::endl;
-    fatfs.add_dir(dirname);
+    try {
+        fatfs.add_dir(dirname);
+    } catch(const std::exception &e) {
+        std::cout << "Cannot add: " << e.what() << std::endl;
+    }
 
     std::cout << "\nPrinting fatfs info:" << std::endl;
     std::cout << "----------------------" << std::endl;
@@ -69,7 +77,11 @@ int main() {
 
     dirname = "Dir3 @ root";
     std::cout << "\nAdding directory: " << dirname << std::endl;
-    fatfs.add_dir(dirname);
+    try {
+        fatfs.add_dir(dirname);
+    } catch(const std::exception &e) {
+        std::cout << "Cannot add: " << e.what() << std::endl;
+    }
 
     std::cout << "\nPrinting fatfs info:" << std::endl;
     std::cout << "----------------------" << std::endl;
@@ -82,7 +94,11 @@ int main() {
 
     filename = "File1 @ root";
     std::cout << "\nAdding directory: " << dirname << std::endl;
-    fatfs.add_file(filename);
+    try {
+        fatfs.add_file(filename);
+    } catch(const std::exception &e) {
+        std::cout << "Cannot add: " << e.what() << std::endl;
+    }
 
     std::cout << "\nPrinting fatfs info:" << std::endl;
     std::cout << "----------------------" << std::endl;
@@ -95,7 +111,11 @@ int main() {
 
     filename = "File2 @ root";
     std::cout << "\nAdding directory: " << dirname << std::endl;
-    fatfs.add_file(filename);
+    try {
+        fatfs.add_file(filename);
+    } catch(const std::exception &e) {
+        std::cout << "Cannot add: " << e.what() << std::endl;
+    }
 
     std::cout << "\nPrinting fatfs info:" << std::endl;
     std::cout << "----------------------" << std::endl;
@@ -108,7 +128,11 @@ int main() {
 
     filename = "File2 @ root";
     std::cout << "\nAdding directory: " << dirname << std::endl;
-    fatfs.add_file(filename);
+    try {
+        fatfs.add_file(filename);
+    } catch(const std::exception &e) {
+        std::cout << "Cannot add: " << e.what() << std::endl;
+    }
 
     std::cout << "\nPrinting fatfs info:" << std::endl;
     std::cout << "----------------------" << std::endl;
@@ -184,9 +208,128 @@ int main() {
     fatfs.print_dirs();
     fatfs.print_files();
 
-    dirname = "Dir1 @ root";
-    std::cout << "\nChanging directory: " << dirname << std::endl;
-    fatfs.change_dir(dirname);
+    path = "/Dir1 @ root";
+    std::cout << "\nChanging directory with path: " << path << std::endl;
+    fatfs.change_dir(path);
+
+    std::cout << "\nPrinting fatfs info:" << std::endl;
+    std::cout << "----------------------" << std::endl;
+    std::cout << fatfs.info() << std::endl;
+
+    std::cout << "\nListing at: " << fatfs.current().name() << std::endl;
+    std::cout << "------------" << std::endl;
+    fatfs.print_dirs();
+    fatfs.print_files();
+
+    dirname = "Nested 1 Dir1";
+    std::cout << "\nAdding directory: " << dirname << std::endl;
+    try {
+        fatfs.add_dir(dirname);
+    } catch(const std::exception &e) {
+        std::cout << "Cannot add: " << e.what() << std::endl;
+    }
+
+    std::cout << "\nPrinting fatfs info:" << std::endl;
+    std::cout << "----------------------" << std::endl;
+    std::cout << fatfs.info() << std::endl;
+
+    std::cout << "\nListing at: " << fatfs.current().name() << std::endl;
+    std::cout << "------------" << std::endl;
+    fatfs.print_dirs();
+    fatfs.print_files();
+
+    path = "Nested 1 Dir1";
+    std::cout << "\nChanging directory with path: " << path << std::endl;
+    fatfs.change_dir(path);
+
+    std::cout << "\nPrinting fatfs info:" << std::endl;
+    std::cout << "----------------------" << std::endl;
+    std::cout << fatfs.info() << std::endl;
+
+    std::cout << "\nListing at: " << fatfs.current().name() << std::endl;
+    std::cout << "------------" << std::endl;
+    fatfs.print_dirs();
+    fatfs.print_files();
+
+    dirname = "Nested 2 Dir1";
+    std::cout << "\nAdding directory: " << dirname << std::endl;
+    try {
+        fatfs.add_dir(dirname);
+    } catch(const std::exception &e) {
+        std::cout << "Cannot add: " << e.what() << std::endl;
+    }
+
+    std::cout << "\nPrinting fatfs info:" << std::endl;
+    std::cout << "----------------------" << std::endl;
+    std::cout << fatfs.info() << std::endl;
+
+    std::cout << "\nListing at: " << fatfs.current().name() << std::endl;
+    std::cout << "------------" << std::endl;
+    fatfs.print_dirs();
+    fatfs.print_files();
+
+    path = "/Dir1 @ root/Nested 1 Dir1/Nested 2 Dir1";
+    std::cout << "\nChanging directory with path: " << path << std::endl;
+    fatfs.change_dir(path);
+
+    std::cout << "\nPrinting fatfs info:" << std::endl;
+    std::cout << "----------------------" << std::endl;
+    std::cout << fatfs.info() << std::endl;
+
+    std::cout << "\nListing at: " << fatfs.current().name() << std::endl;
+    std::cout << "------------" << std::endl;
+    fatfs.print_dirs();
+    fatfs.print_files();
+
+    path = "/";
+    std::cout << "\nChanging directory with path: " << path << std::endl;
+    fatfs.change_dir(path);
+
+    std::cout << "\nPrinting fatfs info:" << std::endl;
+    std::cout << "----------------------" << std::endl;
+    std::cout << fatfs.info() << std::endl;
+
+    std::cout << "\nListing at: " << fatfs.current().name() << std::endl;
+    std::cout << "------------" << std::endl;
+    fatfs.print_dirs();
+    fatfs.print_files();
+
+    dirname = "Dir1 @ root/Nested 1 Dir1/Nested 2 Dir1/Nested 3 Dir1";
+    std::cout << "\nAdding directory: " << dirname << std::endl;
+    try {
+        fatfs.add_dir(dirname);
+    } catch(const std::exception &e) {
+        std::cout << "Cannot add: " << e.what() << std::endl;
+    }
+
+    std::cout << "\nPrinting fatfs info:" << std::endl;
+    std::cout << "----------------------" << std::endl;
+    std::cout << fatfs.info() << std::endl;
+
+    std::cout << "\nListing at: " << fatfs.current().name() << std::endl;
+    std::cout << "------------" << std::endl;
+    fatfs.print_dirs();
+    fatfs.print_files();
+
+    path = "Dir1 @ root/Nested 1 Dir1/Nested 2 Dir1/";
+    std::cout << "\nChanging directory with path: " << path << std::endl;
+    fatfs.change_dir(path);
+
+    std::cout << "\nPrinting fatfs info:" << std::endl;
+    std::cout << "----------------------" << std::endl;
+    std::cout << fatfs.info() << std::endl;
+
+    std::cout << "\nListing at: " << fatfs.current().name() << std::endl;
+    std::cout << "------------" << std::endl;
+    fatfs.print_dirs();
+    fatfs.print_files();
+
+    // fatfs.change_dir("/path1/path2/");
+    // fatfs.change_dir("/path1");
+    // fatfs.change_dir("/path1/");
+    // fatfs.change_dir("path1/path2");
+
+    // fatfs.change_dir("path1/path2/");
 
     std::cout << "\nPrinting fatfs info:" << std::endl;
     std::cout << "----------------------" << std::endl;
@@ -203,7 +346,7 @@ int main() {
     output = fatfs.pwd();
     std::cout << output << std::endl;
 
-    // fatfs.remove_filesystem();
+    fatfs.remove();
 
     return 0;
 }
