@@ -134,7 +134,7 @@ void *connection_handler(void *socketfd) {
                         sock::send_msg(sockfd,
                                        "ERROR Insufficient arguments for C");
                     else {
-                        if(fatfs.full())
+                        if(fatfs.full() || tokens[1].size() > fs::MAX_NAME)
                             sock::send_msg(sockfd, "2");
                         else {
                             fs::FileEntry file = fatfs.add_file(tokens[1]);

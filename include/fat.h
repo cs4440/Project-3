@@ -34,31 +34,26 @@ enum ENTRY { DIR = 0, FILE = 1, ENDBLOCK = -1, MAX_NAME = 87 };
  ******************************************************************************/
 struct FatCell {
     enum {
-        FREE = 0,                          // indicates free cell
-        USED = 1,                          // indicates used cell
-        SIZE = sizeof(bool) + sizeof(int)  // 8 bytes for a FatCell
+        FREE = ENDBLOCK - 1,    // indicates free cell
+        END = ENTRY::ENDBLOCK,  // end of cell/block indicator
+        SIZE = sizeof(int)      // 8 bytes for a FatCell
     };
 
-    bool* _status;
     int* _next_cell;
 
     // CONSTRUCTOR
-    FatCell(char* address = nullptr)
-        : _status((bool*)address), _next_cell((int*)(_status + 1)) {}
+    FatCell(char* address = nullptr) : _next_cell((int*)(address)) {}
 
-    bool valid() const { return _status != nullptr; }
-    bool has_next() const {
-        return _next_cell != nullptr && *_next_cell > ENTRY::ENDBLOCK;
-    }
-    bool free() const { return *_status == FREE; }
-    bool used() const { return *_status == USED; }
+    bool valid() const { return _next_cell != nullptr; }
+    bool has_next() const { return _next_cell != nullptr && *_next_cell > END; }
+    bool free() const { return *_next_cell == FREE; }
+    bool used() const { return *_next_cell > FREE; }
 
     // get cell/block data from address
     int cell() const { return *_next_cell; }
 
     // set cell/block from address
-    void set_free() { *_status = FREE; }
-    void set_used() { *_status = USED; }
+    void set_free() { *_next_cell = FREE; }
     void set_next_cell(int c) { *_next_cell = c; }
 
     friend bool operator==(const FatCell& lhs, const FatCell& rhs) {
@@ -202,7 +197,7 @@ private:
  * Default values when constructed with valid address:
  * name: null bytes
  * type: ENTRY:DIR
- * datacell_index: ENTRY:ENDBLOCK, head pointer link list to data blocks
+ * datacell_index: ENTRY:ENDBLOCK, head pointer linked list to DataEntry
  * size: bytes of all data links (does not include nul byte)
  * data_blocks: the number of data blocks in a disk, excluding Entry itself
  * created: current time
@@ -298,7 +293,7 @@ private:
 };
 
 /*******************************************************************************
- * DataEntry represent a data block in disk of siz Disk::MAX_BLOCK
+ * DataEntry represent a data block in disk of size Disk::MAX_BLOCK
  *
  * Structure of Entry
  * |          data          |

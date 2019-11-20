@@ -14,12 +14,12 @@ PARSER          := state_machine.o token.o tokenizer.o parser.o
 DISK            := disk.o
 FS              := $(DISK) fat.o
 SOCKET          := socket.o
-BASIC_PROC      := basic_client basic_server
-DIRLIST_PROC    := dir_listing_client dir_listing_server
-DISK_PROC       := $(UTILS) $(PARSER) $(SOCKET) $(DISK)\
+BASIC_SERVER    := basic_client basic_server
+DIR_LISTING     := dir_listing_client dir_listing_server
+DISK_SERVER     := $(UTILS) $(PARSER) $(SOCKET) $(DISK)\
                    disk_client disk_client_rand disk_server
-FS_PROC         := $(UTILS) $(PARSER) $(SOCKET) $(FS) fs_client fs_server
-ALL             := $(BASIC_PROC) $(DIRLIST_PROC) $(DISK_PROC) $(FS_PROC)
+BASIC_FS        := $(UTILS) $(PARSER) $(SOCKET) $(FS) fs_client fs_server
+ALL             := $(BASIC_SERVER) $(DIR_LISTING) $(DISK_SERVER) $(BASIC_FS)
                    
 
 # $@ targt name
@@ -31,7 +31,7 @@ all: $(ALL)
 
 # BASIC SERVER
 
-basic: $(BASIC_PROC)
+basic-server: $(BASIC_SERVER)
 
 basic_server: basic_server.o
 	$(CXX) -o $@ $^ $(LDFLAGS)
@@ -45,7 +45,7 @@ basic_client: basic_client.o
 basic_client.o: $(PROC)/basic_client.cpp
 	$(CXX) $(CXXFLAGS) -c $<
 
-listing: $(DIRLIST_PROC)
+dir-listing: $(DIR_LISTING)
 
 dir_listing_server: dir_listing_server.o
 	$(CXX) -o $@ $^ $(LDFLAGS)
@@ -61,7 +61,7 @@ dir_listing_client.o: $(PROC)/dir_listing_client.cpp
 
 # DISK CLIENT/SERVER
 
-disk_proc: $(DISK_PROC)
+disk-server: $(DISK_SERVER)
 
 disk_client: disk_client.o $(SOCKET)
 	$(CXX) -o $@ $^ $(LDFLAGS)
@@ -83,7 +83,7 @@ disk_server.o: $(PROC)/disk_server.cpp
 
 # FILESYSTEM CLIENT/SERVER
 
-fs: $(FS_PROC)
+basic-fs: $(BASIC_FS)
 
 fs_client: fs_client.o $(SOCKET)
 	$(CXX) -o $@ $^ $(LDFLAGS)

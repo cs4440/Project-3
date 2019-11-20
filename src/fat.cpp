@@ -24,10 +24,11 @@ bool Fat::create() {
         for(int i = 0; i < _cells; ++i) {
             cell = FatCell(file);
             cell.set_free();
-            cell.set_next_cell(ENTRY::ENDBLOCK);
+            file += FatCell::SIZE;
 
             _free.emplace(_cell_offset + i);  // populate free cell list
         }
+
         return true;
     } else
         return false;
@@ -343,8 +344,7 @@ std::size_t FatFS::write_file_data(FileEntry &file_entry, const char *data,
             freeindex = *it;
             _fat.free_blocks().erase(it);
             freecell = _fat.get_cell(freeindex);
-            freecell.set_next_cell(ENTRY::ENDBLOCK);
-            freecell.set_used();
+            freecell.set_next_cell(FatCell::END);
 
             // connect file_entry'd data pointer to freeindex
             file_entry.set_datacell_index(freeindex);
@@ -370,8 +370,7 @@ std::size_t FatFS::write_file_data(FileEntry &file_entry, const char *data,
                 freeindex = *it;
                 _fat.free_blocks().erase(it);
                 freecell = _fat.get_cell(freeindex);
-                freecell.set_next_cell(ENTRY::ENDBLOCK);
-                freecell.set_used();
+                freecell.set_next_cell(FatCell::END);
 
                 // connect previous cell to freeindex
                 prevcell.set_next_cell(freeindex);
@@ -408,8 +407,7 @@ void FatFS::_init_root() {
         // if root cell is free, then add Directory entry to block 0 on disk
         if(root_cell.free()) {
             // set root cell
-            root_cell.set_next_cell(ENTRY::ENDBLOCK);
-            root_cell.set_used();
+            root_cell.set_next_cell(FatCell::END);
 
             // initialize root block
             _root.init();
@@ -462,8 +460,7 @@ DirEntry FatFS::_add_dir_at(DirEntry target, std::string name) {
 
                     // mark new cell's cell pointer to END
                     // mark disk block at free index
-                    newcell.set_next_cell(ENTRY::ENDBLOCK);
-                    newcell.set_used();
+                    newcell.set_next_cell(FatCell::END);
 
                     // free index also indicates free block in disk
                     // get directory entry at block and update values
@@ -520,8 +517,7 @@ FileEntry FatFS::_add_file_at(DirEntry target, std::string name) {
 
                     // mark new cell's cell pointer to END
                     // mark disk block at free index
-                    newcell.set_next_cell(ENTRY::ENDBLOCK);
-                    newcell.set_used();
+                    newcell.set_next_cell(FatCell::END);
 
                     // free index also indicates free block in disk
                     // get file entry at block and update values
@@ -595,7 +591,7 @@ DirEntry FatFS::_find_dir_at(DirEntry &dir_entry, std::string name) {
         } else if(name == "..") {
             int parent_block = dir_entry.dotdot();
 
-            if(parent_block != ENDBLOCK)
+            if(parent_block != FatCell::END)
                 found = DirEntry(_disk->file_at(parent_block));
             else
                 found = dir_entry;
@@ -656,7 +652,7 @@ DirEntry FatFS::_find_dir_orlast_at(DirEntry &dir_entry, std::string name) {
         } else if(name == "..") {
             int parent_block = dir_entry.dotdot();
 
-            if(parent_block != ENDBLOCK)
+            if(parent_block != FatCell::END)
                 dir = DirEntry(_disk->file_at(parent_block));
             else
                 dir = dir_entry;
@@ -821,7 +817,7 @@ void FatFS::_free_dir_contents(DirEntry &dir_entry) {
 }
 
 void FatFS::_free_file_data_blocks(FileEntry &file_entry) {
-    int datacell_index = ENTRY::ENDBLOCK;
+    int datacell_index = FatCell::END;
     FatCell datacell;
 
     while(file_entry.valid() && file_entry.has_data()) {
@@ -843,7 +839,6 @@ void FatFS::_free_cell(FatCell &cell, int cell_index) {
     _fat.free_blocks().emplace(cell_index);
 
     // mark this cell as free
-    cell.set_next_cell(ENTRY::ENDBLOCK);
     cell.set_free();
 }
 
