@@ -36,7 +36,7 @@ struct FatCell {
     enum {
         FREE = ENDBLOCK - 1,    // indicates free cell
         END = ENTRY::ENDBLOCK,  // end of cell/block indicator
-        SIZE = sizeof(int)      // 8 bytes for a FatCell
+        SIZE = sizeof(int)      // bytes of a FatCell
     };
 
     int* _next_cell;

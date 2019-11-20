@@ -41,7 +41,7 @@ void read(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs);
 // write data to file
 void write(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs);
 
-// chagne to path
+// change to path
 void cd(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs);
 
 // list path contents
@@ -115,18 +115,20 @@ void *connection_handler(void *socketfd) {
         "WELCOME TO SERVER\n\n"
         "FILE SYSTEM COMMANDS:\n"
         "---------------------\n"
-        "mkfs [CYLINDER] [SECTOR] : Create file system\n"
-        "rmfs : Remove file system\n"
-        "mkdir [NAME] : Create a directory entry of NAME\n"
-        "rmdir [NAME] : Remove directory of NAME\n"
-        "mk [NAME] : Create a file entry of NAME\n"
-        "rm [NAME] : Remove file of NAME\n"
-        "read [NAME] : Read data of file NAME\n"
-        "write [NAME] [DATA] : Write data to file of NAME\n"
-        "cd [PATH] : Chagen directory to PATH\n"
-        "ls : List path contents\n"
-        "info : Display current file system information\n\n";
-    std::string need_create = "Please format filesystem with 'F' command";
+        "mkfs [CYLINDER] [SECTOR]\tCreate filesystem size of cylinder x "
+        "sector\n"
+        "rmfs\t\t\t\tRemove filesystem\n"
+        "mkdir [NAME]\t\t\tCreate a directory entry of NAME\n"
+        "rmdir [NAME]\t\t\tRemove directory of NAME\n"
+        "mk [NAME]\t\t\tCreate a file entry of NAME\n"
+        "rm [NAME]\t\t\tRemove file of NAME\n"
+        "read [NAME]\t\t\tRead data of file NAME\n"
+        "write [NAME] [DATA]\t\tWrite data to file of NAME\n"
+        "cd [PATH]\t\t\tChange directory to PATH\n"
+        "ls\t\t\t\tList path contents\n"
+        "info\t\t\t\tDisplay current file system information\n\n";
+    std::string need_create =
+        "Please create and format filesystem with 'mkfs' command";
     std::string disk_exists = "ERROR filesystem exists";
 
     std::cout << "Serving client" << std::endl;
