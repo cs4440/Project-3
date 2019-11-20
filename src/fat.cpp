@@ -419,7 +419,9 @@ std::size_t FatFS::read_file_data(FileEntry &file_entry, char *data,
     FatCell datacell;
     DataEntry data_entry;
 
-    if(_disk && file_entry) {
+    if(!_disk) throw std::runtime_error("No disk or filesystem");
+
+    if(file_entry) {
         file_entry.update_last_accessed();
 
         if(file_entry.has_data()) {
@@ -453,20 +455,49 @@ std::size_t FatFS::write_file_data(FileEntry &file_entry, const char *data,
     DataEntry data_entry;
     std::set<int>::iterator it;
 
-    if(_disk && file_entry) {
-        // check if file system have enough space for new data
-        if(size > this->free_space())
-            return 0;
-        else {
-            // update file entry timestamps
-            file_entry.update_last_accessed();
-            file_entry.update_last_modified();
+    if(!_disk) throw std::runtime_error("No disk or filesystem");
 
-            // free all associated data blocks before writing
-            _free_file_data_blocks(file_entry);
+    if(_fat.full()) throw std::runtime_error("Disk size full");
 
-            // write first block of data and connect to file_entry's data
-            // pointer
+    if(file_entry) {
+        if(size >
+           (file_entry.data_blocks() + _fat.free_size()) * _disk->max_block())
+            throw std::runtime_error("Not enough space to write data");
+
+        // update file entry timestamps
+        file_entry.update_last_accessed();
+        file_entry.update_last_modified();
+
+        // free all associated data blocks before writing
+        _free_file_data_blocks(file_entry);
+
+        // write first block of data and connect to file_entry's data pointer
+
+        // get a free cell to start writing
+        it = _fat.free_blocks().begin();
+        freeindex = *it;
+        _fat.free_blocks().erase(it);
+        freecell = _fat.get_cell(freeindex);
+        freecell.set_next_cell(FatCell::END);
+
+        // connect file_entry'd data pointer to freeindex
+        file_entry.set_datacell_index(freeindex);
+
+        // get DataEntr with freecell's block pointer
+        data_entry = _disk->file_at(freeindex);
+
+        if(bytes_to_write < (int)_disk->max_block()) {
+            bytes = data_entry.write(data, bytes_to_write);
+            bytes_to_write -= bytes_to_write;
+        } else {
+            bytes = data_entry.write(data, bytes_to_write);
+            bytes_to_write -= _disk->max_block();
+        }
+
+        // write rest of data to data links
+        while(bytes_to_write > 0) {
+            // store previous cell
+            prevcell = freecell;
 
             // get a free cell to start writing
             it = _fat.free_blocks().begin();
@@ -475,50 +506,24 @@ std::size_t FatFS::write_file_data(FileEntry &file_entry, const char *data,
             freecell = _fat.get_cell(freeindex);
             freecell.set_next_cell(FatCell::END);
 
-            // connect file_entry'd data pointer to freeindex
-            file_entry.set_datacell_index(freeindex);
+            // connect previous cell to freeindex
+            prevcell.set_next_cell(freeindex);
 
             // get DataEntr with freecell's block pointer
             data_entry = _disk->file_at(freeindex);
 
             if(bytes_to_write < (int)_disk->max_block()) {
-                bytes = data_entry.write(data, bytes_to_write);
+                bytes += data_entry.write(data + bytes, bytes_to_write);
                 bytes_to_write -= bytes_to_write;
             } else {
-                bytes = data_entry.write(data, bytes_to_write);
+                bytes += data_entry.write(data + bytes, bytes_to_write);
                 bytes_to_write -= _disk->max_block();
             }
-
-            // write rest of data to data links
-            while(bytes_to_write > 0) {
-                // store previous cell
-                prevcell = freecell;
-
-                // get a free cell to start writing
-                it = _fat.free_blocks().begin();
-                freeindex = *it;
-                _fat.free_blocks().erase(it);
-                freecell = _fat.get_cell(freeindex);
-                freecell.set_next_cell(FatCell::END);
-
-                // connect previous cell to freeindex
-                prevcell.set_next_cell(freeindex);
-
-                // get DataEntr with freecell's block pointer
-                data_entry = _disk->file_at(freeindex);
-
-                if(bytes_to_write < (int)_disk->max_block()) {
-                    bytes += data_entry.write(data + bytes, bytes_to_write);
-                    bytes_to_write -= bytes_to_write;
-                } else {
-                    bytes += data_entry.write(data + bytes, bytes_to_write);
-                    bytes_to_write -= _disk->max_block();
-                }
-            }
-            file_entry.set_size(size);  // update file entry size for data
-
-            return size;
         }
+        file_entry.set_size(size);  // update file entry size for data
+
+        return size;
+
     } else
         return 0;
 }

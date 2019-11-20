@@ -192,22 +192,27 @@ void *connection_handler(void *socketfd) {
                         sock::send_msg(sockfd,
                                        "ERROR Insufficient arguments for R");
                     else {
-                        fs::FileEntry fentry = fatfs.find_file(tokens[1]);
+                        try {
+                            fs::FileEntry file = fatfs.find_file(tokens[1]);
 
-                        if(!fentry.valid())
-                            sock::send_msg(sockfd, "1 No file exist");
-                        else {
-                            int bytes = 0;
-                            char *data = new char[fentry.size() + 1];
-                            bytes = fatfs.read_file_data(fentry, data,
-                                                         fentry.size());
-                            data[bytes] = '\0';
+                            if(!file)
+                                sock::send_msg(sockfd, "1 No file exists");
+                            else {
+                                int bytes = 0;
+                                char *data = new char[file.size() + 1];
+                                bytes = fatfs.read_file_data(file, data,
+                                                             file.size());
+                                data[bytes] = '\0';
 
-                            sock::send_msg(
-                                sockfd,
-                                "0 " + std::to_string(bytes) + " " + data);
+                                sock::send_msg(
+                                    sockfd,
+                                    "0 " + std::to_string(bytes) + " " + data);
 
-                            delete[] data;
+                                delete[] data;
+                            }
+                        } catch(const std::exception &e) {
+                            sock::send_msg(sockfd,
+                                           "2 " + std::string(e.what()));
                         }
                     }
                 } else if(tokens[0] == "W") {
@@ -215,19 +220,20 @@ void *connection_handler(void *socketfd) {
                         sock::send_msg(sockfd,
                                        "ERROR Insufficient arguments for W");
                     else {
-                        if(fatfs.full())
-                            sock::send_msg(sockfd, "2");
-                        else {
-                            fs::FileEntry fentry = fatfs.find_file(tokens[1]);
+                        try {
+                            fs::FileEntry file = fatfs.find_file(tokens[1]);
 
-                            if(!fentry.valid())
-                                sock::send_msg(sockfd, "1 No file exist");
+                            if(!file)
+                                sock::send_msg(sockfd, "1 No file exists");
                             else {
-                                fatfs.write_file_data(fentry, tokens[2].c_str(),
+                                fatfs.write_file_data(file, tokens[2].c_str(),
                                                       tokens[2].size());
 
                                 sock::send_msg(sockfd, "0");
                             }
+                        } catch(const std::exception &e) {
+                            sock::send_msg(sockfd,
+                                           "2 " + std::string(e.what()));
                         }
                     }
                 } else if(tokens[0] == "U") {

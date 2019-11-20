@@ -48,7 +48,7 @@ void cd(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs);
 void ls(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs);
 
 // print working directory
-void pwd(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs);
+void pwd(int sockfd, fs::FatFS &fatfs);
 
 }  // namespace fs
 
@@ -197,7 +197,7 @@ void *connection_handler(void *socketfd) {
                 else if(tokens[0] == "ls" || tokens[0] == "L")
                     fs::ls(sockfd, tokens, fatfs);
                 else if(tokens[0] == "pwd")
-                    fs::pwd(sockfd, tokens, fatfs);
+                    fs::pwd(sockfd, fatfs);
                 else if(tokens[0] == "info" || tokens[0] == "I")
                     sock::send_msg(sockfd, fatfs.info());
                 // Unknown commands
@@ -301,19 +301,24 @@ void read(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs) {
     if(tokens.size() < 2)
         sock::send_msg(sockfd, "ERROR Insufficient arguments for read");
     else {
-        fs::FileEntry file = fatfs.find_file(tokens[1]);
+        try {
+            fs::FileEntry file = fatfs.find_file(tokens[1]);
 
-        if(!file)
-            sock::send_msg(sockfd, "1 No file exist");
-        else {
-            int bytes = 0;
-            char *data = new char[file.size() + 1];
-            bytes = fatfs.read_file_data(file, data, file.size());
-            data[bytes] = '\0';
+            if(!file)
+                sock::send_msg(sockfd, "1 No file exists");
+            else {
+                int bytes = 0;
+                char *data = new char[file.size() + 1];
+                bytes = fatfs.read_file_data(file, data, file.size());
+                data[bytes] = '\0';
 
-            sock::send_msg(sockfd, "0 " + std::to_string(bytes) + " " + data);
+                sock::send_msg(sockfd,
+                               "0 " + std::to_string(bytes) + " " + data);
 
-            delete[] data;
+                delete[] data;
+            }
+        } catch(const std::exception &e) {
+            sock::send_msg(sockfd, "2 " + std::string(e.what()));
         }
     }
 }
@@ -322,19 +327,19 @@ void write(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs) {
     if(tokens.size() < 3)
         sock::send_msg(sockfd, "ERROR Insufficient arguments for write");
     else {
-        if(fatfs.full())
-            sock::send_msg(sockfd, "2");
-        else {
+        try {
             fs::FileEntry file = fatfs.find_file(tokens[1]);
 
             if(!file)
-                sock::send_msg(sockfd, "1 No file exist");
+                sock::send_msg(sockfd, "1 No file exists");
             else {
                 fatfs.write_file_data(file, tokens[2].c_str(),
                                       tokens[2].size());
 
                 sock::send_msg(sockfd, "0");
             }
+        } catch(const std::exception &e) {
+            sock::send_msg(sockfd, "2 " + std::string(e.what()));
         }
     }
 }
@@ -372,7 +377,7 @@ void ls(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs) {
     sock::send_msg(sockfd, output);
 }
 
-void pwd(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs) {
+void pwd(int sockfd, fs::FatFS &fatfs) {
     if(fatfs.valid())
         sock::send_msg(sockfd, fatfs.pwd());
     else
