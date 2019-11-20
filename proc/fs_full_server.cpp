@@ -359,12 +359,17 @@ void cd(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs) {
 void ls(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs) {
     // TODO NEED TO PROCESS LS ARGUMENTS
 
+    std::size_t dir_len = 0;
     std::string output;
+
     fatfs.print_dirs_str(output);
 
     if(!output.empty()) output += "\n";
+    dir_len = output.size();
 
     fatfs.print_files_str(output);
+    if(dir_len && dir_len == output.size())
+        output.pop_back();  // remove \n if no files
 
     sock::send_msg(sockfd, output);
 }
