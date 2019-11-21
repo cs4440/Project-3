@@ -6,8 +6,10 @@
 #include <unistd.h>
 #include <unistd.h>  // open(), read(), write(), usleep()
 #include <cstring>   // strncpy()
+#include <iomanip>
 #include <iostream>
 #include <map>
+#include <sstream>
 #include <stdexcept>  // std::exception
 #include <string>     // std::string
 #include <vector>
@@ -345,21 +347,6 @@ int main() {
     // fatfs.change_dir("path1/path2");
 
     // fatfs.change_dir("path1/path2/");
-
-    std::cout << "\nPrinting fatfs info:" << std::endl;
-    std::cout << "----------------------" << std::endl;
-    std::cout << fatfs.info() << std::endl;
-
-    std::cout << "\nListing at: " << fatfs.current().name() << std::endl;
-    std::cout << "------------" << std::endl;
-    output.clear();
-    fatfs.print_dirs_str(output);
-    fatfs.print_files_str(output);
-    std::cout << output << std::endl;
-
-    std::cout << "\nPWD at: " << fatfs.current().name() << std::endl;
-    output = fatfs.pwd();
-    std::cout << output << std::endl;
 
     fatfs.remove();
 

@@ -1,6 +1,7 @@
 #include <pthread.h>            // POSIX threads
 #include <unistd.h>             // getopt()
 #include <iostream>             // std::stream
+#include <sstream>              // ostringstream
 #include "../include/disk.h"    // Disk class
 #include "../include/fat.h"     // Disk class
 #include "../include/parser.h"  // Parser, get cli tokens with grammar
@@ -106,7 +107,7 @@ void *connection_handler(void *socketfd) {
     std::string client_msg;
     Parser parser;
     std::vector<std::string> tokens;
-    std::string diskname = "client";
+    std::string diskname = "full-client";
 
     // create disk with default settings
     fs::FatFS fatfs;
@@ -365,9 +366,9 @@ void ls(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs) {
     char opts[] = "1l";
     char **argv = nullptr;
     int argc = tokens.size(), opt = -1;
-    std::string output, ls_path = ".";
+    std::ostringstream oss;
+    std::string ls_path = ".";
     std::string *path = &ls_path;
-    std::size_t dir_strlen = 0;
 
     // converts tokens into argv
     argv = new char *[tokens.size() + 1];
@@ -378,7 +379,7 @@ void ls(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs) {
     argv[tokens.size()] = nullptr;
 
     // get hyphen options
-    optind = 0;
+    optind = 0;  // reset global option index from <unistd> extern
     while((opt = getopt(argc, argv, opts)) != -1) {
         switch(opt) {
             case '1':
@@ -401,16 +402,9 @@ void ls(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs) {
             break;
         }
 
-    fatfs.print_dirs_str(output, *path);
-
-    if(!output.empty()) output += "\n";
-    dir_strlen = output.size();
-
-    fatfs.print_files_str(output, *path);
-    if(dir_strlen && dir_strlen == output.size())
-        output.pop_back();  // remove \n if no files
-
-    sock::send_msg(sockfd, output);
+    // print path to ostringstream and then pass oss to socket
+    fatfs.print_all(oss, *path);
+    sock::send_msg(sockfd, oss.str());
 }
 
 void pwd(int sockfd, fs::FatFS &fatfs) {

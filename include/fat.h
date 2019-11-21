@@ -18,20 +18,19 @@
 
 namespace fs {
 
-enum ENTRY { DIR = 0, FILE = 1, ENDBLOCK = -1, MAX_NAME = 87 };
+enum ENTRY { DIR = 0, FILE = 1, ENDBLOCK = -1, MAX_NAME = 79 };
 
 /*******************************************************************************
  * Class to representation of a cell in File Allocation Table (FAT).
  * The FatCell takes in an address (of a FAT) to represent its data.
  *
- * Structure of a cell: [ bool status, int next cell/block #]
- * Size: sizeof(bool) + sizeof(int) for each fat cell
+ * Structure of a cell: [ int next cell/block #]
+ * Size: sizeof(int) for each fat cell
  *
  * Values of status: FREE or USED
  *
- * Values of _next_cell: ENTRY::ENDBLOCK or greater
- * ENTRY::ENDBLOCK: end of next cell/block chain
- * _next cell > ENDBLOCK: valid next cell/block chain
+ * Cell value of USED state is FatCell::END or greater
+ * Cell value of FREE is FatCell::FREE or less
  ******************************************************************************/
 struct FatCell {
     enum {
@@ -94,8 +93,8 @@ struct FatCell {
  * Default values when constructed with valid address:
  * name: null bytes
  * type: ENTRY:DIR
- * dot:  ENTRY::ENDBLOCK
- * dotdot: ENTRY:ENDBLOCK
+ * dot: ENTRY::ENDBLOCK, self pointer
+ * dotdot: ENTRY:ENDBLOCK, parent pointer
  * dircell_index: ENTRY:ENDBLOCK, head pointer of linked list to DirEntry
  * filecell_index: ENTRY:ENDBLOCK, head pointer of linked list to FileEntry
  * created: current time
@@ -135,6 +134,7 @@ public:
         set_dotdot(ENTRY::ENDBLOCK);
         set_dircell_index(ENTRY::ENDBLOCK);
         set_filecell_index(ENTRY::ENDBLOCK);
+        set_size(0);
         update_created();
         update_last_accessed();
         update_last_modified();
@@ -153,6 +153,9 @@ public:
     void set_dotdot(int block) { *_dotdot = block; }
     void set_dircell_index(int cell) { *_dircell_index = cell; }
     void set_filecell_index(int cell) { *_filecell_index = cell; }
+    void set_size(int size) { *_size = size; }
+    void inc_size(int inc) { *_size += inc; }
+    void dec_size(int dec) { *_size -= dec; }
     void set_created(time_t t) { *_created = t; }
     void update_created() { *_created = std::time(_created); }
     void set_last_accessed(time_t t) { *_last_accessed = t; }
@@ -171,7 +174,8 @@ public:
         _dotdot = _dot + 1;
         _dircell_index = _dotdot + 1;
         _filecell_index = _dircell_index + 1;
-        _created = (time_t*)(_filecell_index + 1);
+        _size = _filecell_index + 1;
+        _created = (time_t*)(_size + 1);
         _last_accessed = _created + 1;
         _last_modified = _last_accessed + 1;
     }
@@ -183,6 +187,7 @@ private:
     int* _dotdot;
     int* _dircell_index;
     int* _filecell_index;
+    int* _size;
     time_t* _created;
     time_t* _last_accessed;
     time_t* _last_modified;
@@ -199,9 +204,10 @@ private:
  * Default values when constructed with valid address:
  * name: null bytes
  * type: ENTRY:DIR
+ * dot: ENTRY::ENDBLOCK, self pointer
+ * dotdot: ENTRY:ENDBLOCK, parent pointer
  * datacell_index: ENTRY:ENDBLOCK, head pointer linked list to DataEntry
  * size: bytes of all data links (does not include nul byte)
- * data_blocks: the number of data blocks in a disk, excluding Entry itself
  * created: current time
  * last_accessed: current time
  * last_modified: current time
@@ -219,7 +225,6 @@ public:
     int dot() const { return *_dot; }
     int datacell_index() const { return *_datacell_index; }
     int size() const { return *_size; }
-    int data_blocks() const { return *_data_blocks; }
     time_t created() const { return *_created; }
     time_t last_accessed() const { return *_last_accessed; }
     time_t last_modified() const { return *_last_modified; }
@@ -233,9 +238,9 @@ public:
         memset(_name, 0, MAX_NAME);
         set_type(ENTRY::FILE);
         set_dot(ENTRY::ENDBLOCK);
+        set_dotdot(ENTRY::ENDBLOCK);
         set_datacell_index(ENTRY::ENDBLOCK);
         set_size(0);
-        set_data_blocks(0);
         update_created();
         update_last_accessed();
         update_last_modified();
@@ -251,14 +256,11 @@ public:
 
     void set_type(bool type) { *_type = type; }
     void set_dot(int block) { *_dot = block; }
+    void set_dotdot(int block) { *_dotdot = block; }
     void set_datacell_index(int cell) { *_datacell_index = cell; }
-    void set_size(int size) {
-        *_size = size;
-
-        // update block size
-        set_data_blocks((size + Disk::MAX_BLOCK - 1) / Disk::MAX_BLOCK);
-    };
-    void set_data_blocks(int size) { *_data_blocks = size; };
+    void set_size(int size) { *_size = size; }
+    void inc_size(int inc) { *_size += inc; }
+    void dec_size(int dec) { *_size -= dec; }
     void set_created(time_t t) { *_created = t; }
     void update_created() { *_created = std::time(_created); }
     void set_last_accessed(time_t t) { *_last_accessed = t; }
@@ -274,10 +276,10 @@ public:
         _name = address;
         _type = (bool*)(_name + MAX_NAME);
         _dot = (int*)(_type + 1);
-        _datacell_index = _dot + 1;
+        _dotdot = _dot + 1;
+        _datacell_index = _dotdot + 1;
         _size = _datacell_index + 1;
-        _data_blocks = _size + 1;
-        _created = (time_t*)(_data_blocks + 1);
+        _created = (time_t*)(_size + 1);
         _last_accessed = _created + 1;
         _last_modified = _last_accessed + 1;
     }
@@ -286,9 +288,9 @@ private:
     char* _name;
     bool* _type;
     int* _dot;
+    int* _dotdot;
     int* _datacell_index;
     int* _size;
-    int* _data_blocks;
     time_t* _created;
     time_t* _last_accessed;
     time_t* _last_modified;
@@ -374,10 +376,11 @@ public:
 
     bool create();  // create FAT table on disk
     bool open();    // load existing FAT table in disk
+    void remove();  // clear
 
     bool valid() const;     // check if this FAT table is valid
     operator bool() const;  // explicit bool conv
-    std::size_t free_size() const;
+    std::size_t size() const;
     std::size_t full() const;
 
     // return FatCell to read/write data to
@@ -454,10 +457,9 @@ public:
     DirEntry current() const;        // return current directory entry
 
     // print directory at path, default to cwd of "."
-    void print_dirs(std::string path = ".");
-    void print_dirs_str(std::string& output, std::string path = ".");
-    void print_files(std::string path = ".");
-    void print_files_str(std::string& output, std::string path = ".");
+    void print_dirs(std::ostream& outs = std::cout, std::string path = ".");
+    void print_files(std::ostream& outs = std::cout, std::string path = ".");
+    void print_all(std::ostream& outs = std::cout, std::string path = ".");
 
     void set_name(std::string name);
     DirEntry add_dir(std::string path);     // add last entry in path

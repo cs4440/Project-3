@@ -65,7 +65,7 @@ void *connection_handler(void *socketfd) {
     std::string client_msg;
     Parser parser;
     std::vector<std::string> tokens;
-    std::string diskname = "client";
+    std::string diskname = "basic-client";
 
     // create disk with default settings
     fs::FatFS fatfs;
@@ -182,11 +182,11 @@ void *connection_handler(void *socketfd) {
                 } else if(tokens[0] == "I") {
                     sock::send_msg(sockfd, fatfs.info());
                 } else if(tokens[0] == "L") {
-                    std::string output;
-                    fatfs.print_dirs_str(output);
-                    fatfs.print_files_str(output);
+                    std::ostringstream oss;
+                    fatfs.print_dirs(oss);
+                    fatfs.print_files(oss);
 
-                    sock::send_msg(sockfd, output);
+                    sock::send_msg(sockfd, oss.str());
                 } else if(tokens[0] == "R") {
                     if(tokens.size() < 2)
                         sock::send_msg(sockfd,

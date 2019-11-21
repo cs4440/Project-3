@@ -51,11 +51,17 @@ bool Fat::open() {
         return false;
 }
 
+void Fat::remove() {
+    _file = nullptr;
+    _cells = _cell_offset = 0;
+    _free.clear();
+}
+
 bool Fat::valid() const { return _file != nullptr; }
 
 Fat::operator bool() const { return _file != nullptr; }
 
-std::size_t Fat::free_size() const { return _free.size(); }
+std::size_t Fat::size() const { return _free.size(); }
 
 std::size_t Fat::full() const { return _free.size() == 0; }
 
@@ -175,18 +181,18 @@ std::size_t FatFS::size() const {
 
 std::size_t FatFS::used_space() const {
     if(_disk)
-        return (_logical_blocks - _fat.free_size()) * _disk->max_block();
+        return (_logical_blocks - _fat.size()) * _disk->max_block();
     else
         return 0;
 }
 
-bool FatFS::full() const { return _fat.free_size() == 0; }
+bool FatFS::full() const { return _fat.size() == 0; }
 
 std::string FatFS::name() const { return _name; }
 
 std::size_t FatFS::free_space() const {
     if(_disk)
-        return _fat.free_size() * _disk->max_block();
+        return _fat.size() * _disk->max_block();
     else
         return 0;
 }
@@ -223,25 +229,7 @@ std::string FatFS::size_info() const {
 
 DirEntry FatFS::current() const { return _current; }
 
-void FatFS::print_dirs(std::string path) {
-    DirEntry dir;
-    std::list<std::string> entries_path;
-    DirSet entries(cmp_dir_name);
-
-    // tokenize a path string to list of named entries
-    _tokenize_path(path, entries_path);
-
-    // find a valid end point of the path of named entries
-    dir = _parse_dir_entries(entries_path);
-
-    // get an ordered set of Entry by comparator
-    _dirs_at(dir, entries);
-
-    for(auto it = entries.begin(); it != entries.end(); ++it)
-        std::cout << it->name() << '\n';
-}
-
-void FatFS::print_dirs_str(std::string &output, std::string path) {
+void FatFS::print_dirs(std::ostream &outs, std::string path) {
     DirEntry dir;
     std::list<std::string> entries_path;
     DirSet entries(cmp_dir_name);
@@ -256,32 +244,14 @@ void FatFS::print_dirs_str(std::string &output, std::string path) {
     _dirs_at(dir, entries);
 
     for(auto it = entries.begin(); it != entries.end(); ++it) {
-        output += it->name();
+        outs << it->name();
 
         auto next = it;
-        if(++next != entries.end()) output += '\n';
+        if(++next != entries.end()) outs << '\n';
     }
 }
 
-void FatFS::print_files(std::string path) {
-    DirEntry dir;
-    std::list<std::string> entries_path;
-    FileSet entries(cmp_file_name);
-
-    // tokenize a path string to list of named entries
-    _tokenize_path(path, entries_path);
-
-    // find a valid end point of the path of named entries
-    dir = _parse_dir_entries(entries_path);
-
-    // get an ordered set of Entry by comparator
-    _files_at(dir, entries);
-
-    for(auto it = entries.begin(); it != entries.end(); ++it)
-        std::cout << it->name() << '\n';
-}
-
-void FatFS::print_files_str(std::string &output, std::string path) {
+void FatFS::print_files(std::ostream &outs, std::string path) {
     DirEntry dir;
     std::list<std::string> entries_path;
     FileSet entries(cmp_file_name);
@@ -296,17 +266,54 @@ void FatFS::print_files_str(std::string &output, std::string path) {
     _files_at(dir, entries);
 
     for(auto it = entries.begin(); it != entries.end(); ++it) {
-        output += it->name();
+        outs << it->name();
 
         auto next = it;
-        if(++next != entries.end()) output += '\n';
+        if(++next != entries.end()) outs << '\n';
+    }
+}
+
+void FatFS::print_all(std::ostream &outs, std::string path) {
+    DirEntry dir;
+    std::list<std::string> path_entries;
+    DirSet dir_entries(cmp_dir_name);
+    FileSet file_entries(cmp_file_name);
+
+    // tokenize a path string to list of named entries
+    _tokenize_path(path, path_entries);
+
+    // find a valid end point of the path of named entries
+    dir = _parse_dir_entries(path_entries);
+
+    // get an ordered set of Entry by comparator
+    _dirs_at(dir, dir_entries);
+
+    // get an ordered set of Entry by comparator
+    _files_at(dir, file_entries);
+
+    for(auto it = dir_entries.begin(); it != dir_entries.end(); ++it) {
+        outs << it->name();
+
+        auto next = it;
+        if(++next != dir_entries.end()) outs << '\n';
+    }
+
+    if(!dir_entries.empty() && !file_entries.empty()) outs << '\n';
+
+    for(auto it = file_entries.begin(); it != file_entries.end(); ++it) {
+        outs << it->name();
+
+        auto next = it;
+        if(++next != file_entries.end()) outs << '\n';
     }
 }
 
 void FatFS::remove() {
     if(_disk) _disk->remove();
     _name.clear();
-    _fat.free_blocks() = std::set<int>();
+    _logical_blocks = 0;
+    _block_offset = 0;
+    _fat.remove();
 }
 
 void FatFS::set_name(std::string name) { _name = name; }
@@ -492,8 +499,7 @@ std::size_t FatFS::write_file_data(FileEntry &file_entry, const char *data,
     if(_fat.full()) throw std::runtime_error("Disk size full");
 
     if(file_entry) {
-        if(size >
-           (file_entry.data_blocks() + _fat.free_size()) * _disk->max_block())
+        if(size > (file_entry.size() + _fat.size() * _disk->max_block()))
             throw std::runtime_error("Not enough space to write data");
 
         // update file entry timestamps
@@ -629,7 +635,7 @@ DirEntry FatFS::_add_dir_at(DirEntry &target, std::string name) {
                 dir.init();                    // init default values
                 dir.set_name(name);            // set dir name
                 dir.set_dot(new_index);        // set self index
-                dir.set_dotdot(target.dot());  // set parent's index
+                dir.set_dotdot(target.dot());  // set parent index
 
                 // update last cell pointer
                 if(target.has_dirs()) {
@@ -684,9 +690,10 @@ FileEntry FatFS::_add_file_at(DirEntry &target, std::string name) {
                 // free index also indicates free block in disk
                 // get file entry at block and update values
                 file = FileEntry(_disk->file_at(new_index));
-                file.init();              // init default values
-                file.set_name(name);      // set file name
-                file.set_dot(new_index);  // set self index
+                file.init();                    // init default values
+                file.set_name(name);            // set file name
+                file.set_dot(new_index);        // set self index
+                file.set_dotdot(target.dot());  // set parent index
 
                 // update last cell pointer
                 if(target.has_files())
