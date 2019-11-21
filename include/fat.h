@@ -452,10 +452,12 @@ public:
     std::string size_info() const;   // return string only size info
     std::string pwd() const;         // print working directory
     DirEntry current() const;        // return current directory entry
-    void print_dirs();               // print directories at current dir
-    void print_dirs_str(std::string& output);   // a string of dir listing
-    void print_files();                         // print files at current dir
-    void print_files_str(std::string& output);  // string of file listing
+
+    // print directory at path, default to cwd of "."
+    void print_dirs(std::string path = ".");
+    void print_dirs_str(std::string& output, std::string path = ".");
+    void print_files(std::string path = ".");
+    void print_files_str(std::string& output, std::string path = ".");
 
     void set_name(std::string name);
     DirEntry add_dir(std::string path);     // add last entry in path

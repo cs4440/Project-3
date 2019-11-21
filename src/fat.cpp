@@ -223,21 +223,37 @@ std::string FatFS::size_info() const {
 
 DirEntry FatFS::current() const { return _current; }
 
-void FatFS::print_dirs() {
+void FatFS::print_dirs(std::string path) {
+    DirEntry dir;
+    std::list<std::string> entries_path;
     DirSet entries(cmp_dir_name);
 
+    // tokenize a path string to list of named entries
+    _tokenize_path(path, entries_path);
+
+    // find a valid end point of the path of named entries
+    dir = _parse_dir_entries(entries_path);
+
     // get an ordered set of Entry by comparator
-    _dirs_at(_current, entries);
+    _dirs_at(dir, entries);
 
     for(auto it = entries.begin(); it != entries.end(); ++it)
         std::cout << it->name() << '\n';
 }
 
-void FatFS::print_dirs_str(std::string &output) {
+void FatFS::print_dirs_str(std::string &output, std::string path) {
+    DirEntry dir;
+    std::list<std::string> entries_path;
     DirSet entries(cmp_dir_name);
 
+    // tokenize a path string to list of named entries
+    _tokenize_path(path, entries_path);
+
+    // find a valid end point of the path of named entries
+    dir = _parse_dir_entries(entries_path);
+
     // get an ordered set of Entry by comparator
-    _dirs_at(_current, entries);
+    _dirs_at(dir, entries);
 
     for(auto it = entries.begin(); it != entries.end(); ++it) {
         output += it->name();
@@ -247,21 +263,37 @@ void FatFS::print_dirs_str(std::string &output) {
     }
 }
 
-void FatFS::print_files() {
+void FatFS::print_files(std::string path) {
+    DirEntry dir;
+    std::list<std::string> entries_path;
     FileSet entries(cmp_file_name);
 
+    // tokenize a path string to list of named entries
+    _tokenize_path(path, entries_path);
+
+    // find a valid end point of the path of named entries
+    dir = _parse_dir_entries(entries_path);
+
     // get an ordered set of Entry by comparator
-    _files_at(_current, entries);
+    _files_at(dir, entries);
 
     for(auto it = entries.begin(); it != entries.end(); ++it)
         std::cout << it->name() << '\n';
 }
 
-void FatFS::print_files_str(std::string &output) {
+void FatFS::print_files_str(std::string &output, std::string path) {
+    DirEntry dir;
+    std::list<std::string> entries_path;
     FileSet entries(cmp_file_name);
 
+    // tokenize a path string to list of named entries
+    _tokenize_path(path, entries_path);
+
+    // find a valid end point of the path of named entries
+    dir = _parse_dir_entries(entries_path);
+
     // get an ordered set of Entry by comparator
-    _files_at(_current, entries);
+    _files_at(dir, entries);
 
     for(auto it = entries.begin(); it != entries.end(); ++it) {
         output += it->name();
@@ -480,19 +512,16 @@ std::size_t FatFS::write_file_data(FileEntry &file_entry, const char *data,
         freecell = _fat.get_cell(freeindex);
         freecell.set_next_cell(FatCell::END);
 
-        // connect file_entry'd data pointer to freeindex
+        // connect file_entry's data pointer to freeindex
         file_entry.set_datacell_index(freeindex);
 
-        // get DataEntr with freecell's block pointer
+        // get DataEntry with freecell's block pointer
         data_entry = _disk->file_at(freeindex);
 
-        if(bytes_to_write < (int)_disk->max_block()) {
-            bytes = data_entry.write(data, bytes_to_write);
-            bytes_to_write -= bytes_to_write;
-        } else {
-            bytes = data_entry.write(data, bytes_to_write);
-            bytes_to_write -= _disk->max_block();
-        }
+        // write first data block
+        bytes = data_entry.write(data + bytes, bytes_to_write);
+        bytes_to_write -= bytes;
+        data += bytes;
 
         // write rest of data to data links
         while(bytes_to_write > 0) {
@@ -512,18 +541,14 @@ std::size_t FatFS::write_file_data(FileEntry &file_entry, const char *data,
             // get DataEntr with freecell's block pointer
             data_entry = _disk->file_at(freeindex);
 
-            if(bytes_to_write < (int)_disk->max_block()) {
-                bytes += data_entry.write(data + bytes, bytes_to_write);
-                bytes_to_write -= bytes_to_write;
-            } else {
-                bytes += data_entry.write(data + bytes, bytes_to_write);
-                bytes_to_write -= _disk->max_block();
-            }
+            // write data blocks
+            bytes = data_entry.write(data, bytes_to_write);
+            bytes_to_write -= bytes;
+            data += bytes;
         }
         file_entry.set_size(size);  // update file entry size for data
 
         return size;
-
     } else
         return 0;
 }

@@ -1,4 +1,5 @@
 #include <pthread.h>            // POSIX threads
+#include <unistd.h>             // getopt()
 #include <iostream>             // std::stream
 #include "../include/disk.h"    // Disk class
 #include "../include/fat.h"     // Disk class
@@ -360,18 +361,53 @@ void cd(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs) {
 }
 
 void ls(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs) {
-    // TODO NEED TO PROCESS LS ARGUMENTS
+    bool is_list_details = false;
+    char opts[] = "1l";
+    char **argv = nullptr;
+    int argc = tokens.size(), opt = -1;
+    std::string output, ls_path = ".";
+    std::string *path = &ls_path;
+    std::size_t dir_strlen = 0;
 
-    std::size_t dir_len = 0;
-    std::string output;
+    // converts tokens into argv
+    argv = new char *[tokens.size() + 1];
+    for(std::size_t i = 0; i < tokens.size(); ++i) {
+        argv[i] = new char[tokens[i].size() + 1]();
+        strncpy(argv[i], tokens[i].c_str(), tokens[i].size());
+    }
+    argv[tokens.size()] = nullptr;
 
-    fatfs.print_dirs_str(output);
+    // get hyphen options
+    optind = 0;
+    while((opt = getopt(argc, argv, opts)) != -1) {
+        switch(opt) {
+            case '1':
+            case 'l':
+                is_list_details = true;
+                break;
+            default:
+                break;
+        }
+    }
+
+    // dellocate argv
+    for(std::size_t i = 0; i < tokens.size(); ++i) delete[] argv[i];
+    delete[] argv;
+
+    // find if path argument if exists
+    for(std::size_t i = 1; i < tokens.size(); ++i)
+        if(tokens[i][0] != '-') {
+            path = &tokens[i];
+            break;
+        }
+
+    fatfs.print_dirs_str(output, *path);
 
     if(!output.empty()) output += "\n";
-    dir_len = output.size();
+    dir_strlen = output.size();
 
-    fatfs.print_files_str(output);
-    if(dir_len && dir_len == output.size())
+    fatfs.print_files_str(output, *path);
+    if(dir_strlen && dir_strlen == output.size())
         output.pop_back();  // remove \n if no files
 
     sock::send_msg(sockfd, output);
