@@ -1,5 +1,5 @@
-#ifndef DAT_H
-#define DAT_H
+#ifndef FAT_H
+#define FAT_H
 
 #include <fcntl.h>       // io macro
 #include <sys/mman.h>    // mmap()
@@ -23,22 +23,25 @@ namespace fs {
 enum ENTRY { DIR = 0, FILE = 1, ENDBLOCK = -1, MAX_NAME = 79 };
 
 /*******************************************************************************
- * Class to representation of a cell in File Allocation Table (FAT).
- * The FatCell takes in an address (of a FAT) to represent its data.
+ * Data representation of a cell in File Allocation Table (FAT).
+ * The FatCell is an array element of the FAT at a specified address.
+ * The FatCell is also like a node in a linked list in the FAT. The status of
+ * the node is marked by the _next_cell's value. If the cell is not free, then
+ * it points to the next cell or signal end of block. If cell is free, it
+ * points nowhere.
  *
  * Structure of a cell: [ int next cell/block #]
  * Size: sizeof(int) for each fat cell
  *
- * Values of status: FREE or USED
- *
- * Cell value of USED state is FatCell::END or greater
- * Cell value of FREE is FatCell::FREE or less
+ * Value of cell: FREE or USED
+ *  - USED state is FatCell::END or greater
+ *  - FREE state is FatCell::FREE or less
  ******************************************************************************/
 struct FatCell {
     enum {
-        FREE = ENDBLOCK - 1,    // indicates free cell
-        END = ENTRY::ENDBLOCK,  // end of cell/block indicator
-        SIZE = sizeof(int)      // bytes of a FatCell
+        FREE = ENTRY::ENDBLOCK - 1,  // indicates free cell
+        END = ENTRY::ENDBLOCK,       // end of cell/block indicator
+        SIZE = sizeof(int)           // bytes of a FatCell
     };
 
     int* _next_cell;
@@ -137,7 +140,7 @@ public:
     // clear and initialize all fields to default values
     // WARNING: will delete existing data!
     void init() {
-        memset(_name, 0, MAX_NAME);
+        memset(_name, 0, ENTRY::MAX_NAME);
         set_type(ENTRY::DIR);
         set_dot(ENTRY::ENDBLOCK);
         set_dotdot(ENTRY::ENDBLOCK);
@@ -150,10 +153,10 @@ public:
     }
 
     void set_name(std::string name) {
-        if(name.size() > MAX_NAME)
+        if(name.size() > ENTRY::MAX_NAME)
             throw std::range_error("File name size exceeded");
 
-        memset(_name, 0, MAX_NAME);
+        memset(_name, 0, ENTRY::MAX_NAME);
         strncpy(_name, name.c_str(), name.size());
     }
 
@@ -178,7 +181,7 @@ public:
 
     void _reset_address(char* address) {
         _name = address;
-        _type = (bool*)(_name + MAX_NAME);
+        _type = (bool*)(_name + ENTRY::MAX_NAME);
         _dot = (int*)(_type + 1);
         _dotdot = _dot + 1;
         _dir_head = _dotdot + 1;
@@ -253,7 +256,7 @@ public:
     // clear and initialize all fields to default values
     // WARNING: will delete existing data!
     void init() {
-        memset(_name, 0, MAX_NAME);
+        memset(_name, 0, ENTRY::MAX_NAME);
         set_type(ENTRY::FILE);
         set_dot(ENTRY::ENDBLOCK);
         set_dotdot(ENTRY::ENDBLOCK);
@@ -266,10 +269,10 @@ public:
     }
 
     void set_name(std::string name) {
-        if(name.size() > MAX_NAME)
+        if(name.size() > ENTRY::MAX_NAME)
             throw std::range_error("File name size exceeded");
 
-        memset(_name, 0, MAX_NAME);
+        memset(_name, 0, ENTRY::MAX_NAME);
         strncpy(_name, name.c_str(), name.size());
     }
 
@@ -294,7 +297,7 @@ public:
 
     void _reset_address(char* address) {
         _name = address;
-        _type = (bool*)(_name + MAX_NAME);
+        _type = (bool*)(_name + ENTRY::MAX_NAME);
         _dot = (int*)(_type + 1);
         _dotdot = _dot + 1;
         _data_head = _dotdot + 1;
@@ -389,7 +392,11 @@ bool cmp_file_name(const FileEntry& a, const FileEntry& b);
 /*******************************************************************************
  * Class to representation of File Allocation Table (FAT), which is comprised
  * of FatCell. FAT table size is an array of FatCells, which is mapped from
- * a physical file to memory.
+ * a physical file to memory. FAT traversal is through a FatCell, which acts
+ * like a node in a linked list.
+ *
+ * Each cell in a FAT also represent a block in disk at _cell_offset.
+ * Ex: FAT[5] = Disk block at [5 + _cell_offset];
  ******************************************************************************/
 class Fat {
 public:
@@ -406,7 +413,7 @@ public:
     std::size_t full() const;
 
     // return FatCell to read/write data to
-    FatCell get_cell(int index);
+    FatCell get_cell(int index) const;
 
     std::set<int>& free_blocks() { return _free; }
 
@@ -452,12 +459,13 @@ private:
  ******************************************************************************/
 class FatFS {
 public:
+    // Set of DirEntry and FileEntry with custom Comparison object
     typedef std::set<DirEntry, bool (*)(const DirEntry&, const DirEntry&)>
         DirSet;
     typedef std::set<FileEntry, bool (*)(const FileEntry&, const FileEntry&)>
         FileSet;
 
-    enum { META_SZ = 3 * sizeof(int) };
+    enum { META_SZ = 3 * sizeof(int) };  // filesystem metadata at start of disk
 
     FatFS(Disk* disk = nullptr);
 
@@ -466,7 +474,7 @@ public:
     bool open_disk();           // open formatted disk, false if not formatted
     bool format();              // format disk
     bool valid() const;         // check if FatFS instance is valid
-    void remove();              // WARNING Will delete both disk and fat file!
+    void remove();              // WARNING Will delete disk in system!
 
     std::size_t total_size() const;  // total logical size of disk
     std::size_t size() const;        // return used bytes in disk
@@ -480,24 +488,24 @@ public:
 
     // print directory at path, default to cwd of "."
     void print_dirs(std::ostream& outs = std::cout, std::string path = ".",
-                    bool is_details = false);
+                    bool is_details = false) const;
     void print_files(std::ostream& outs = std::cout, std::string path = ".",
-                     bool is_details = false);
+                     bool is_details = false) const;
     void print_all(std::ostream& outs = std::cout, std::string path = ".",
-                   bool is_details = false);
+                   bool is_details = false) const;
 
     void set_name(std::string name);
-    DirEntry add_dir(std::string path);     // add last entry in path
-    FileEntry add_file(std::string path);   // add last entry in path
-    bool delete_dir(std::string path);      // remove last entry in path
-    bool delete_file(std::string path);     // remove last entry in path
-    bool change_dir(std::string path);      // change to path if valid
-    FileEntry find_file(std::string path);  // find last entry in path
+    DirEntry add_dir(std::string path);           // add last entry in path
+    FileEntry add_file(std::string path);         // add last entry in path
+    bool delete_dir(std::string path);            // remove last entry in path
+    bool delete_file(std::string path);           // remove last entry in path
+    bool change_dir(std::string path);            // change to path if valid
+    FileEntry find_file(std::string path) const;  // find last entry in path
 
     // read file data into data buffer of size
     // returns successful bytes read
     std::size_t read_file_data(FileEntry& file_entry, char* data,
-                               std::size_t size);
+                               std::size_t size) const;
 
     // overwrite data buffer to file entry
     std::size_t write_file_data(FileEntry& file_entry, const char* data,
@@ -507,7 +515,7 @@ public:
     void remove_file_data(FileEntry& file_entry);
 
 private:
-    std::string _name;  // name of Fat file system
+    std::string _name;  // name of filesystem
     Disk* _disk;        // physical disk
     Fat _fat;           // FAT table
     DirEntry _root;     // root directory entry
@@ -524,16 +532,16 @@ private:
     FileEntry _add_file_at(DirEntry& target, std::string name);
 
     // get a set of all entry at given directory entry by comparison function
-    void _dirs_at(DirEntry& dir_entry, DirSet& entries_set);
-    void _files_at(DirEntry& dir_entry, FileSet& entries_set);
+    void _dirs_at(DirEntry& dir_entry, DirSet& entries_set) const;
+    void _files_at(DirEntry& dir_entry, FileSet& entries_set) const;
 
     // find an entry by name at given directory or return invalid entry
-    DirEntry _find_dir_at(DirEntry& dir_entry, std::string name);
-    FileEntry _find_file_at(DirEntry& dir_entry, std::string name);
+    DirEntry _find_dir_at(DirEntry& dir_entry, std::string name) const;
+    FileEntry _find_file_at(DirEntry& dir_entry, std::string name) const;
 
     // find an entry by name at given directory or return last entry
-    DirEntry _find_dir_orlast_at(DirEntry& dir_entry, std::string name);
-    FileEntry _find_file_orlast_at(DirEntry& dir_entry, std::string name);
+    DirEntry _find_dir_orlast_at(DirEntry& dir_entry, std::string name) const;
+    FileEntry _find_file_orlast_at(DirEntry& dir_entry, std::string name) const;
 
     // delete directory of a specificed name
     bool _delete_dir_at_dir(DirEntry& dir_entry, std::string name);
@@ -553,23 +561,24 @@ private:
     void _update_parents_size(DirEntry dir_entry, std::size_t size);
 
     // get last cell from entry
-    FatCell _last_dircell_from_dir(DirEntry& dir_entry);
-    FatCell _last_filecell_from_dir(DirEntry& dir_entry);
-    FatCell _last_datacell_from_file(FileEntry& file_entry);
-    FatCell _last_cell_from_cell(int cell_offset);
+    FatCell _last_dircell_from_dir(DirEntry& dir_entry) const;
+    FatCell _last_filecell_from_dir(DirEntry& dir_entry) const;
+    FatCell _last_datacell_from_file(FileEntry& file_entry) const;
+    FatCell _last_cell_from_cell(int cell_offset) const;
 
     // tokenize a path string and return a list of name entries
-    void _tokenize_path(std::string path, std::list<std::string>& entries);
+    void _tokenize_path(std::string path,
+                        std::list<std::string>& entries) const;
 
     // parse a path of string named entries; return a valid DirEntry if found
-    DirEntry _parse_dir_entries(std::list<std::string>& entries);
+    DirEntry _parse_dir_entries(std::list<std::string>& entries) const;
 
     void _find_entries_len_details(DirSet& entries_set, std::size_t& name_len,
-                                   std::size_t& byte_len);
+                                   std::size_t& byte_len) const;
     void _find_entries_len_details(FileSet& entries_set, std::size_t& name_len,
-                                   std::size_t& byte_len);
+                                   std::size_t& byte_len) const;
 };
 
 }  // namespace fs
 
-#endif  // DAT_H
+#endif  // FAT_H

@@ -155,11 +155,11 @@ std::string Disk::geometry() const {
                        std::to_string(_sectors));
 }
 
-int Disk::fd() { return _fd; }
+int Disk::fd() const { return _fd; }
 
-char *Disk::file() { return _file; }
+char *Disk::file() const { return _file; }
 
-char *Disk::file_at(int block) {
+char *Disk::file_at(int block) const {
     if(block > -1 && block < int(_cylinders * _sectors))
         return _file + (block * _max_block);
     else
@@ -190,7 +190,7 @@ bool Disk::set_name(std::string n) {
 
 void Disk::set_track_time(std::size_t t) { _track_time = t; }
 
-std::string Disk::read_at(std::size_t cyl, std::size_t sec) {
+std::string Disk::read_at(std::size_t cyl, std::size_t sec) const {
     if(cyl > _cylinders - 1 || sec > _sectors - 1)
         return "0";
     else {

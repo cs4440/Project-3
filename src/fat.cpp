@@ -65,7 +65,7 @@ std::size_t Fat::size() const { return _free.size(); }
 
 std::size_t Fat::full() const { return _free.size() == 0; }
 
-FatCell Fat::get_cell(int index) {
+FatCell Fat::get_cell(int index) const {
     if((index - _cell_offset) < _cells)
         return FatCell(_file + (index - _cell_offset) * FatCell::SIZE);
     else
@@ -229,7 +229,8 @@ std::string FatFS::pwd() const {
 
 DirEntry FatFS::current() const { return _current; }
 
-void FatFS::print_dirs(std::ostream &outs, std::string path, bool is_details) {
+void FatFS::print_dirs(std::ostream &outs, std::string path,
+                       bool is_details) const {
     using namespace style;
 
     struct tm *tm_info;
@@ -256,8 +257,7 @@ void FatFS::print_dirs(std::ostream &outs, std::string path, bool is_details) {
              << Ansi(RESET);
 
         if(is_details)
-            outs << std::left << std::setw(max_name_len - it->name().size() + 1)
-                 << ' ';
+            outs << std::setw(max_name_len - it->name().size() + 1) << ' ';
 
         if(is_details) {
             outs << std::right << std::setw(max_byte_len) << it->size();
@@ -271,7 +271,8 @@ void FatFS::print_dirs(std::ostream &outs, std::string path, bool is_details) {
     }
 }
 
-void FatFS::print_files(std::ostream &outs, std::string path, bool is_details) {
+void FatFS::print_files(std::ostream &outs, std::string path,
+                        bool is_details) const {
     using namespace style;
 
     struct tm *tm_info;
@@ -297,8 +298,7 @@ void FatFS::print_files(std::ostream &outs, std::string path, bool is_details) {
         outs << Ansi(BOLD) << Ansi(BLUE) << it->name() << Ansi(RESET);
 
         if(is_details)
-            outs << std::left << std::setw(max_name_len - it->name().size() + 1)
-                 << ' ';
+            outs << std::setw(max_name_len - it->name().size() + 1) << ' ';
 
         if(is_details) {
             outs << std::right << std::setw(max_byte_len) << it->size();
@@ -312,7 +312,8 @@ void FatFS::print_files(std::ostream &outs, std::string path, bool is_details) {
     }
 }
 
-void FatFS::print_all(std::ostream &outs, std::string path, bool is_details) {
+void FatFS::print_all(std::ostream &outs, std::string path,
+                      bool is_details) const {
     using namespace style;
 
     struct tm *tm_info;
@@ -345,8 +346,7 @@ void FatFS::print_all(std::ostream &outs, std::string path, bool is_details) {
              << Ansi(RESET);
 
         if(is_details)
-            outs << std::left << std::setw(max_name_len - it->name().size() + 1)
-                 << ' ';
+            outs << std::setw(max_name_len - it->name().size() + 1) << ' ';
 
         if(is_details) {
             outs << std::right << std::setw(max_byte_len) << it->size();
@@ -364,8 +364,7 @@ void FatFS::print_all(std::ostream &outs, std::string path, bool is_details) {
         outs << Ansi(BOLD) << Ansi(BLUE) << it->name() << Ansi(RESET);
 
         if(is_details)
-            outs << std::left << std::setw(max_name_len - it->name().size() + 1)
-                 << ' ';
+            outs << std::setw(max_name_len - it->name().size() + 1) << ' ';
 
         if(is_details) {
             outs << std::right << std::setw(max_byte_len) << it->size();
@@ -506,7 +505,7 @@ bool FatFS::change_dir(std::string path) {
         return false;
 }
 
-FileEntry FatFS::find_file(std::string path) {
+FileEntry FatFS::find_file(std::string path) const {
     DirEntry dir;
     std::list<std::string> entries;
     std::string find_name;
@@ -525,7 +524,7 @@ FileEntry FatFS::find_file(std::string path) {
 }
 
 std::size_t FatFS::read_file_data(FileEntry &file_entry, char *data,
-                                  std::size_t size) {
+                                  std::size_t size) const {
     std::size_t bytes = 0;
     FatCell datacell;
     DataEntry data_entry;
@@ -803,7 +802,7 @@ FileEntry FatFS::_add_file_at(DirEntry &target, std::string name) {
 
 // dir_entry: directory entry to start looking at
 // entries_set: set of ordered entires by comparator
-void FatFS::_dirs_at(DirEntry &dir_entry, DirSet &entries_set) {
+void FatFS::_dirs_at(DirEntry &dir_entry, DirSet &entries_set) const {
     FatCell dircell;
 
     // clear directory if not empty
@@ -822,7 +821,7 @@ void FatFS::_dirs_at(DirEntry &dir_entry, DirSet &entries_set) {
 
 // dir_entry: directory entry to start looking at
 // entries_set: set of ordered entires by comparator
-void FatFS::_files_at(DirEntry &dir_entry, FileSet &entries_set) {
+void FatFS::_files_at(DirEntry &dir_entry, FileSet &entries_set) const {
     FatCell filecell;
 
     // clear directory if not empty
@@ -840,7 +839,7 @@ void FatFS::_files_at(DirEntry &dir_entry, FileSet &entries_set) {
 }
 
 // dir_entry: directory entry to start looking at
-DirEntry FatFS::_find_dir_at(DirEntry &dir_entry, std::string name) {
+DirEntry FatFS::_find_dir_at(DirEntry &dir_entry, std::string name) const {
     DirEntry dir, found;
     FatCell dircell;
 
@@ -876,7 +875,7 @@ DirEntry FatFS::_find_dir_at(DirEntry &dir_entry, std::string name) {
 }
 
 // dir_entry: directory entry to start looking at
-FileEntry FatFS::_find_file_at(DirEntry &dir_entry, std::string name) {
+FileEntry FatFS::_find_file_at(DirEntry &dir_entry, std::string name) const {
     FileEntry file, found;
     FatCell filecell;
 
@@ -901,7 +900,8 @@ FileEntry FatFS::_find_file_at(DirEntry &dir_entry, std::string name) {
 }
 
 // dir_entry: directory entry to start looking at
-DirEntry FatFS::_find_dir_orlast_at(DirEntry &dir_entry, std::string name) {
+DirEntry FatFS::_find_dir_orlast_at(DirEntry &dir_entry,
+                                    std::string name) const {
     DirEntry dir;
     FatCell dircell;
 
@@ -932,7 +932,8 @@ DirEntry FatFS::_find_dir_orlast_at(DirEntry &dir_entry, std::string name) {
 }
 
 // dir_entry: directory entry to start looking at
-FileEntry FatFS::_find_file_orlast_at(DirEntry &dir_entry, std::string name) {
+FileEntry FatFS::_find_file_orlast_at(DirEntry &dir_entry,
+                                      std::string name) const {
     FileEntry file;
     FatCell filecell;
 
@@ -1129,19 +1130,19 @@ void FatFS::_update_parents_size(DirEntry dir_entry, std::size_t size) {
     }
 }
 
-FatCell FatFS::_last_dircell_from_dir(DirEntry &dir_entry) {
+FatCell FatFS::_last_dircell_from_dir(DirEntry &dir_entry) const {
     return _last_cell_from_cell(dir_entry.dir_head());
 }
 
-FatCell FatFS::_last_filecell_from_dir(DirEntry &dir_entry) {
+FatCell FatFS::_last_filecell_from_dir(DirEntry &dir_entry) const {
     return _last_cell_from_cell(dir_entry.file_head());
 }
 
-FatCell FatFS::_last_datacell_from_file(FileEntry &file_entry) {
+FatCell FatFS::_last_datacell_from_file(FileEntry &file_entry) const {
     return _last_cell_from_cell(file_entry.data_head());
 }
 
-FatCell FatFS::_last_cell_from_cell(int start_cell) {
+FatCell FatFS::_last_cell_from_cell(int start_cell) const {
     FatCell current = _fat.get_cell(start_cell);
 
     while(current.has_next()) current = _fat.get_cell(current.cell());
@@ -1149,7 +1150,8 @@ FatCell FatFS::_last_cell_from_cell(int start_cell) {
     return current;
 }
 
-void FatFS::_tokenize_path(std::string path, std::list<std::string> &entries) {
+void FatFS::_tokenize_path(std::string path,
+                           std::list<std::string> &entries) const {
     char *token = nullptr;
 
     while(!entries.empty()) entries.pop_back();
@@ -1172,7 +1174,7 @@ void FatFS::_tokenize_path(std::string path, std::list<std::string> &entries) {
     }
 }
 
-DirEntry FatFS::_parse_dir_entries(std::list<std::string> &entries) {
+DirEntry FatFS::_parse_dir_entries(std::list<std::string> &entries) const {
     DirEntry dir = _current;
     std::string entry_name;
 
@@ -1198,7 +1200,7 @@ DirEntry FatFS::_parse_dir_entries(std::list<std::string> &entries) {
 
 void FatFS::_find_entries_len_details(DirSet &entries_set,
                                       std::size_t &name_len,
-                                      std::size_t &byte_len) {
+                                      std::size_t &byte_len) const {
     std::size_t name_size = 0, byte_size = 0;
 
     for(const DirEntry &d : entries_set) {
@@ -1212,7 +1214,7 @@ void FatFS::_find_entries_len_details(DirSet &entries_set,
 
 void FatFS::_find_entries_len_details(FileSet &entries_set,
                                       std::size_t &name_len,
-                                      std::size_t &byte_len) {
+                                      std::size_t &byte_len) const {
     std::size_t name_size = 0, byte_size = 0;
 
     for(const FileEntry &d : entries_set) {

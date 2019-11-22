@@ -13,6 +13,9 @@ namespace sock {
 
 enum { PORT = 8000, BUFLEN = 1024 };
 
+/*******************************************************************************
+ * Socket base class
+ ******************************************************************************/
 class Socket {
 public:
     Socket(int port = PORT);
@@ -30,6 +33,9 @@ protected:
     int _port;
 };
 
+/*******************************************************************************
+ * Socket Server class
+ ******************************************************************************/
 class Server : public Socket {
 public:
     Server(int port = PORT);
@@ -44,6 +50,9 @@ private:
     socklen_t _addrlen;
 };
 
+/*******************************************************************************
+ * Socket Client class
+ ******************************************************************************/
 class Client : public Socket {
 public:
     Client(std::string host = "localhost", int port = PORT);

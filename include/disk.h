@@ -13,6 +13,14 @@
 
 namespace fs {
 
+/*******************************************************************************
+ * Simulation of a disk. The size of disk is number of cylinders x sectors.
+ * Each sector is of size _max_block. Read/write to a block by providing index
+ * of cylinder - 1 and sector - 1. Or a disk can return a address location at
+ * block number for direct writing/reading.
+ *
+ * Disk reading/writing delay can be set by _track_time
+ ******************************************************************************/
 class Disk {
 public:
     enum {
@@ -42,9 +50,9 @@ public:
     std::size_t location(std::size_t cyl, std::size_t sec) const;
     std::size_t location(std::size_t block) const;
     std::string geometry() const;  // return a string with disk geometry
-    int fd();
-    char* file();
-    char* file_at(int block);
+    int fd() const;
+    char* file() const;
+    char* file_at(int block) const;
 
     void set_cylinders(std::size_t c);   // set cylinders if valid
     void set_sectors(std::size_t s);     // set sectors per cylinder if valid
@@ -53,7 +61,7 @@ public:
     bool set_name(std::string n);        // set disk name when not valid
 
     // read at cylinder and sector index
-    std::string read_at(std::size_t cyl, std::size_t sec);
+    std::string read_at(std::size_t cyl, std::size_t sec) const;
     // write str of _sec_sz
     bool write_at(const char* buf, std::size_t cyl, std::size_t sec,
                   std::size_t bufsz = MAX_BLOCK);
