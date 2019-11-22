@@ -85,8 +85,8 @@ struct FatCell {
 
 /*******************************************************************************
  * Class to representation of a Directory Entry in a disk block.
- * Subdirectories (DirEntry's) are contained in dircell_index linked list.
- * Files (FileEntry's) are contained in filecell_index linked list.
+ * Subdirectories (DirEntry's) are contained in dir_head linked list.
+ * Files (FileEntry's) are contained in file_head linked list.
  *
  * Structure of Entry
  * |      name     | valid | type | dot | dotdot | dir ptr | file ptr | times...
@@ -97,8 +97,8 @@ struct FatCell {
  * type: ENTRY:DIR
  * dot: ENTRY::ENDBLOCK, self pointer
  * dotdot: ENTRY:ENDBLOCK, parent pointer
- * dircell_index: ENTRY:ENDBLOCK, head pointer of linked list to DirEntry
- * filecell_index: ENTRY:ENDBLOCK, head pointer of linked list to FileEntry
+ * dir_head: ENTRY:ENDBLOCK, head pointer of linked list to DirEntry
+ * file_head: ENTRY:ENDBLOCK, head pointer of linked list to FileEntry
  * created: current time
  * last_accessed: current time
  * last_modified: current time
@@ -107,8 +107,8 @@ class DirEntry {
 public:
     DirEntry(char* address = nullptr) { _reset_address(address); }
 
-    bool has_dirs() const { return dircell_index() > ENTRY::ENDBLOCK; }
-    bool has_files() const { return filecell_index() > ENTRY::ENDBLOCK; }
+    bool has_dirs() const { return dir_head() > ENTRY::ENDBLOCK; }
+    bool has_files() const { return file_head() > ENTRY::ENDBLOCK; }
     bool has_parent() const { return dotdot() != ENTRY::ENDBLOCK; }
     bool valid() const { return _name != nullptr; }
     operator bool() const { return _name != nullptr; }  // explicit bool conv
@@ -118,8 +118,8 @@ public:
     bool type() const { return *_type; }
     int dot() const { return *_dot; }
     int dotdot() const { return *_dotdot; }
-    int dircell_index() const { return *_dircell_index; }
-    int filecell_index() const { return *_filecell_index; }
+    int dir_head() const { return *_dir_head; }
+    int file_head() const { return *_file_head; }
     int size() const { return *_size; }
     time_t created() const { return *_created; }
     time_t* created_ptr() const { return _created; }
@@ -141,8 +141,8 @@ public:
         set_type(ENTRY::DIR);
         set_dot(ENTRY::ENDBLOCK);
         set_dotdot(ENTRY::ENDBLOCK);
-        set_dircell_index(ENTRY::ENDBLOCK);
-        set_filecell_index(ENTRY::ENDBLOCK);
+        set_dir_head(ENTRY::ENDBLOCK);
+        set_file_head(ENTRY::ENDBLOCK);
         set_size(0);
         update_created();
         update_last_accessed();
@@ -160,8 +160,8 @@ public:
     void set_type(bool type) { *_type = type; }
     void set_dot(int block) { *_dot = block; }
     void set_dotdot(int block) { *_dotdot = block; }
-    void set_dircell_index(int cell) { *_dircell_index = cell; }
-    void set_filecell_index(int cell) { *_filecell_index = cell; }
+    void set_dir_head(int cell) { *_dir_head = cell; }
+    void set_file_head(int cell) { *_file_head = cell; }
     void set_size(int size) { *_size = size; }
     void inc_size(int inc) { *_size += inc; }
     void dec_size(int dec) { *_size -= dec; }
@@ -181,9 +181,9 @@ public:
         _type = (bool*)(_name + MAX_NAME);
         _dot = (int*)(_type + 1);
         _dotdot = _dot + 1;
-        _dircell_index = _dotdot + 1;
-        _filecell_index = _dircell_index + 1;
-        _size = _filecell_index + 1;
+        _dir_head = _dotdot + 1;
+        _file_head = _dir_head + 1;
+        _size = _file_head + 1;
         _created = (time_t*)(_size + 1);
         _last_accessed = _created + 1;
         _last_modified = _last_accessed + 1;
@@ -194,8 +194,8 @@ private:
     bool* _type;
     int* _dot;
     int* _dotdot;
-    int* _dircell_index;
-    int* _filecell_index;
+    int* _dir_head;
+    int* _file_head;
     int* _size;
     time_t* _created;
     time_t* _last_accessed;
@@ -204,7 +204,7 @@ private:
 
 /*******************************************************************************
  * Class to representation of a Directory Entry in a disk block.
- * File data blocks (DataEntry's) are contained in datacell_index linked list.
+ * File data blocks (DataEntry's) are contained in data_head linked list.
  *
  * Structure of Entry
  * |      name      | valid | type | data ptr | times...
@@ -215,8 +215,9 @@ private:
  * type: ENTRY:DIR
  * dot: ENTRY::ENDBLOCK, self pointer
  * dotdot: ENTRY:ENDBLOCK, parent pointer
- * datacell_index: ENTRY:ENDBLOCK, head pointer linked list to DataEntry
- * size: bytes of all data links (does not include nul byte)
+ * data_head: ENTRY:ENDBLOCK, head pointer linked list to DataEntry
+ * size: size of entire FileEntry with data blocks
+ * data_size: bytes of all data links (does not include nul byte)
  * created: current time
  * last_accessed: current time
  * last_modified: current time
@@ -225,7 +226,7 @@ class FileEntry {
 public:
     FileEntry(char* address = nullptr) { _reset_address(address); }
 
-    bool has_data() const { return datacell_index() > ENTRY::ENDBLOCK; }
+    bool has_data() const { return data_head() > ENTRY::ENDBLOCK; }
     bool valid() const { return _name != nullptr; }
     operator bool() const { return _name != nullptr; }  // explicit bool conv
 
@@ -233,8 +234,9 @@ public:
     bool type() const { return *_type; }
     int dot() const { return *_dot; }
     int dotdot() const { return *_dotdot; }
-    int datacell_index() const { return *_datacell_index; }
+    int data_head() const { return *_data_head; }
     int size() const { return *_size; }
+    int data_size() const { return *_data_size; }
     time_t created() const { return *_created; }
     time_t* created_ptr() const { return _created; }
     char* created_str() const { return std::ctime(_created); }
@@ -255,8 +257,9 @@ public:
         set_type(ENTRY::FILE);
         set_dot(ENTRY::ENDBLOCK);
         set_dotdot(ENTRY::ENDBLOCK);
-        set_datacell_index(ENTRY::ENDBLOCK);
+        set_data_head(ENTRY::ENDBLOCK);
         set_size(0);
+        set_data_size(0);
         update_created();
         update_last_accessed();
         update_last_modified();
@@ -273,10 +276,11 @@ public:
     void set_type(bool type) { *_type = type; }
     void set_dot(int block) { *_dot = block; }
     void set_dotdot(int block) { *_dotdot = block; }
-    void set_datacell_index(int cell) { *_datacell_index = cell; }
+    void set_data_head(int cell) { *_data_head = cell; }
     void set_size(int size) { *_size = size; }
     void inc_size(int inc) { *_size += inc; }
     void dec_size(int dec) { *_size -= dec; }
+    void set_data_size(int size) { *_data_size = size; }
     void set_created(time_t t) { *_created = t; }
     void update_created() { *_created = std::time(_created); }
     void set_last_accessed(time_t t) { *_last_accessed = t; }
@@ -293,9 +297,10 @@ public:
         _type = (bool*)(_name + MAX_NAME);
         _dot = (int*)(_type + 1);
         _dotdot = _dot + 1;
-        _datacell_index = _dotdot + 1;
-        _size = _datacell_index + 1;
-        _created = (time_t*)(_size + 1);
+        _data_head = _dotdot + 1;
+        _size = _data_head + 1;
+        _data_size = _size + 1;
+        _created = (time_t*)(_data_size + 1);
         _last_accessed = _created + 1;
         _last_modified = _last_accessed + 1;
     }
@@ -305,8 +310,9 @@ private:
     bool* _type;
     int* _dot;
     int* _dotdot;
-    int* _datacell_index;
+    int* _data_head;
     int* _size;
+    int* _data_size;
     time_t* _created;
     time_t* _last_accessed;
     time_t* _last_modified;
@@ -462,9 +468,9 @@ public:
     bool valid() const;         // check if FatFS instance is valid
     void remove();              // WARNING Will delete both disk and fat file!
 
-    std::size_t size() const;        // size of FS in bytes
-    std::size_t free_space() const;  // return unused bytes left in disk
-    std::size_t used_space() const;  // return used bytes in disk
+    std::size_t total_size() const;  // total logical size of disk
+    std::size_t size() const;        // return used bytes in disk
+    std::size_t free_size() const;   // return unused bytes left in disk
     bool full() const;               // if disk is full
     std::string name() const;        // name of the file system
     std::string info() const;        // return string filesystem info
@@ -542,6 +548,9 @@ private:
 
     // mark given FatCell as free and push to free list
     void _free_cell(FatCell& cell, int cell_index);
+
+    // update all parents size, up to root directory
+    void _update_parents_size(DirEntry dir_entry, std::size_t size);
 
     // get last cell from entry
     FatCell _last_dircell_from_dir(DirEntry& dir_entry);

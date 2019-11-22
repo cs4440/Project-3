@@ -316,7 +316,7 @@ void read(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs) {
                 sock::send_msg(sockfd, "1 No file exists");
             else {
                 int bytes = 0;
-                char *data = new char[file.size() + 1];
+                char *data = new char[file.data_size() + 1];
                 bytes = fatfs.read_file_data(file, data, file.size());
                 data[bytes] = '\0';
 

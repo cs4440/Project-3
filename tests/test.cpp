@@ -16,6 +16,7 @@
 #include "../include/fat.h"
 
 int main() {
+    std::ostringstream oss;
     char *buff = nullptr;
     int bytes = 0;
     fs::FileEntry fentry;
@@ -43,7 +44,7 @@ int main() {
     fatfs.print_dirs();
     fatfs.print_files();
 
-    dirname = "Dir1 @ root";
+    dirname = "dir1";
     std::cout << "\nAdding directory: " << dirname << std::endl;
     try {
         fatfs.add_dir(dirname);
@@ -51,16 +52,7 @@ int main() {
         std::cout << "Cannot add: " << e.what() << std::endl;
     }
 
-    std::cout << "\nPrinting fatfs info:" << std::endl;
-    std::cout << "----------------------" << std::endl;
-    std::cout << fatfs.info() << std::endl;
-
-    std::cout << "\nListing at: " << fatfs.current().name() << std::endl;
-    std::cout << "------------" << std::endl;
-    fatfs.print_dirs();
-    fatfs.print_files();
-
-    dirname = "Dir2 @ root yyyyyyyyy";
+    dirname = "dir2";
     std::cout << "\nAdding directory: " << dirname << std::endl;
     try {
         fatfs.add_dir(dirname);
@@ -68,16 +60,15 @@ int main() {
         std::cout << "Cannot add: " << e.what() << std::endl;
     }
 
-    std::cout << "\nPrinting fatfs info:" << std::endl;
-    std::cout << "----------------------" << std::endl;
-    std::cout << fatfs.info() << std::endl;
+    filename = "file1";
+    std::cout << "\nAdding directory: " << dirname << std::endl;
+    try {
+        fatfs.add_file(filename);
+    } catch(const std::exception &e) {
+        std::cout << "Cannot add: " << e.what() << std::endl;
+    }
 
-    std::cout << "\nListing at: " << fatfs.current().name() << std::endl;
-    std::cout << "------------" << std::endl;
-    fatfs.print_dirs();
-    fatfs.print_files();
-
-    dirname = "Dir3 @ root zzzzzzzzzzzzzzzzzzz";
+    dirname = "dir1/dir2";
     std::cout << "\nAdding directory: " << dirname << std::endl;
     try {
         fatfs.add_dir(dirname);
@@ -85,267 +76,60 @@ int main() {
         std::cout << "Cannot add: " << e.what() << std::endl;
     }
 
-    std::cout << "\nPrinting fatfs info:" << std::endl;
-    std::cout << "----------------------" << std::endl;
-    std::cout << fatfs.info() << std::endl;
-
-    std::cout << "\nListing at: " << fatfs.current().name() << std::endl;
-    std::cout << "------------" << std::endl;
-    fatfs.print_dirs();
-    fatfs.print_files();
-
-    filename = "File1 @ root";
+    filename = "dir1/dir2/file3";
     std::cout << "\nAdding directory: " << dirname << std::endl;
     try {
-        fatfs.add_file(filename);
+        fentry = fatfs.add_file(filename);
     } catch(const std::exception &e) {
         std::cout << "Cannot add: " << e.what() << std::endl;
     }
 
-    std::cout << "\nPrinting fatfs info:" << std::endl;
-    std::cout << "----------------------" << std::endl;
-    std::cout << fatfs.info() << std::endl;
-
-    std::cout << "\nListing at: " << fatfs.current().name() << std::endl;
-    std::cout << "------------" << std::endl;
-    fatfs.print_dirs();
-    fatfs.print_files();
-
-    filename = "File2 @ root";
-    std::cout << "\nAdding directory: " << dirname << std::endl;
-    try {
-        fatfs.add_file(filename);
-    } catch(const std::exception &e) {
-        std::cout << "Cannot add: " << e.what() << std::endl;
-    }
-
-    std::cout << "\nPrinting fatfs info:" << std::endl;
-    std::cout << "----------------------" << std::endl;
-    std::cout << fatfs.info() << std::endl;
-
-    std::cout << "\nListing at: " << fatfs.current().name() << std::endl;
-    std::cout << "------------" << std::endl;
-    fatfs.print_dirs();
-    fatfs.print_files();
-
-    filename = "File2 @ root";
-    std::cout << "\nAdding directory: " << dirname << std::endl;
-    try {
-        fatfs.add_file(filename);
-    } catch(const std::exception &e) {
-        std::cout << "Cannot add: " << e.what() << std::endl;
-    }
-
-    std::cout << "\nPrinting fatfs info:" << std::endl;
-    std::cout << "----------------------" << std::endl;
-    std::cout << fatfs.info() << std::endl;
-
-    std::cout << "\nListing at: " << fatfs.current().name() << std::endl;
-    std::cout << "------------" << std::endl;
-    fatfs.print_dirs();
-    fatfs.print_files();
-
-    fentry = fatfs.find_file(filename);
-    std::cout << "\nWriting data to: " << filename << std::endl;
-    data = "Hello";
-    std::cout << "Data size: " << data.size() << std::endl;
-    bytes = fatfs.write_file_data(fentry, data.c_str(), data.size());
-
-    std::cout << "\nReading data from: " << filename << std::endl;
-    buff = new char[fentry.size() + 1];
-    bytes = fatfs.read_file_data(fentry, buff, fentry.size());
-    buff[bytes] = '\0';
-    std::cout << buff << std::endl;
-
-    std::cout << "Bytes read: " << bytes << std::endl;
-    std::cout << "File size: " << fentry.size() << std::endl;
-
-    delete[] buff;
-
-    fentry = fatfs.find_file(filename);
-    std::cout << "\nWriting data to: " << filename << std::endl;
     data =
-        "SOmasdfliajsdofjlaekjlajoidjfglidsjglj3242354o9ert9udfgidgkldjrflgijl0"
-        "fsfjlsertjwle4jte90dgudgiehtke4jto9923u434534546476567lkjljdrtzzzzzz"
-        "SOmasdfliajsdofjlaekjlajoidjfglidsjglj3242354o9ert9udfgidgkldjrflgijl0"
-        "fsfjlsertjwle4jte90dgudgiehtke4jto9923u434534546476567lkjljdrtzzzzzz"
-        "SOmasdfliajsdofjlaekjlajoidjfglidsjglj3242354o9ert9udfgidgkldjrflgijl0"
-        "fsfjlsertjwle4jte90dgudgiehtke4jto9923u434534546476567lkjljdrtzzzzzz"
-        "SOmasdfliajsdofjlaekjlajoidjfglidsjglj3242354o9ert9udfgidgkldjrflgijl0"
-        "fsfjlsertjwle4jte90dgudgiehtke4jto9923u434534546476567lkjljdrtzzzzzz"
-        "SOmasdfliajsdofjlaekjlajoidjfglidsjglj3242354o9ert9udfgidgkldjrflgijl0"
-        "fsfjlsertjwle4jte90dgudgiehtke4jto9923u434534546476567lkjljdrtzzzzzz"
-        "SOmasdfliajsdofjlaekjlajoidjfglidsjglj3242354o9ert9udfgidgkldjrflgijl0"
-        "fsfjlsertjwle4jte90dgudgiehtke4jto9923u434534546476567lkjljdrtzzzzzz"
-        "SOmasdfliajsdofjlaekjlajoidjfglidsjglj3242354o9ert9udfgidgkldjrflgijl0"
-        "fsfjlsertjwle4jte90dgudgiehtke4jto9923u434534546476567lkjljdrtzzzzzz"
-        "SOmasdfliajsdofjlaekjlajoidjfglidsjglj3242354o9ert9udfgidgkldjrflgijl0"
-        "fsfjlsertjwle4jte90dgudgiehtke4jto9923u434534546476567lkjljdrtzzzzz "
-        "end of file";
-    std::cout << "Data size: " << data.size() << std::endl;
-    bytes = fatfs.write_file_data(fentry, data.c_str(), data.size());
+        "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+        "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+        "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+        "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+        "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+        "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz1";
+    fatfs.write_file_data(fentry, data.c_str(), data.size());
 
-    std::cout << "\nReading data from: " << filename << std::endl;
-    buff = new char[fentry.size() + 1];
-    bytes = fatfs.read_file_data(fentry, buff, fentry.size());
-    buff[bytes] = '\0';
+    buff = new char[fentry.data_size() + 1];
+    fatfs.read_file_data(fentry, buff, data.size());
     std::cout << buff << std::endl;
-
-    std::cout << "Bytes read: " << bytes << std::endl;
-    std::cout << "File size: " << fentry.size() << std::endl;
 
     delete[] buff;
 
-    fentry = fatfs.find_file(filename);
-    std::cout << "\nWriting data to: " << filename << std::endl;
-    data = "Hello";
-    std::cout << "Data size: " << data.size() << std::endl;
-    bytes = fatfs.write_file_data(fentry, data.c_str(), data.size());
+    data =
+        "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+        "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+        "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+        "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+        "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+        "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz1";
+    fatfs.write_file_data(fentry, data.c_str(), data.size());
 
-    std::cout << "Bytes written: " << bytes << std::endl;
-    std::cout << "File size: " << fentry.size() << std::endl;
-
-    std::cout << "\nReading data from: " << filename << std::endl;
-    buff = new char[fentry.size() + 1];
-    bytes = fatfs.read_file_data(fentry, buff, fentry.size());
-    buff[bytes] = '\0';
+    buff = new char[fentry.data_size() + 1];
+    fatfs.read_file_data(fentry, buff, data.size());
     std::cout << buff << std::endl;
-
-    std::cout << "Bytes read: " << bytes << std::endl;
-    std::cout << "File size: " << fentry.size() << std::endl;
 
     delete[] buff;
 
-    std::cout << "\nPrinting fatfs info:" << std::endl;
-    std::cout << "----------------------" << std::endl;
-    std::cout << fatfs.info() << std::endl;
+    data =
+        "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+        "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+        "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+        "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz1";
+    fatfs.write_file_data(fentry, data.c_str(), data.size());
 
-    std::cout << "\nListing at: " << fatfs.current().name() << std::endl;
-    std::cout << "------------" << std::endl;
-    fatfs.print_dirs();
-    fatfs.print_files();
+    buff = new char[fentry.data_size() + 1];
+    fatfs.read_file_data(fentry, buff, data.size());
+    std::cout << buff << std::endl;
 
-    path = "/Dir1 @ root";
-    std::cout << "\nChanging directory with path: " << path << std::endl;
-    fatfs.change_dir(path);
-
-    std::cout << "\nPrinting fatfs info:" << std::endl;
-    std::cout << "----------------------" << std::endl;
-    std::cout << fatfs.info() << std::endl;
-
-    std::cout << "\nListing at: " << fatfs.current().name() << std::endl;
-    std::cout << "------------" << std::endl;
-    fatfs.print_dirs();
-    fatfs.print_files();
-
-    dirname = "Nested 1 Dir1";
-    std::cout << "\nAdding directory: " << dirname << std::endl;
-    try {
-        fatfs.add_dir(dirname);
-    } catch(const std::exception &e) {
-        std::cout << "Cannot add: " << e.what() << std::endl;
-    }
-
-    std::cout << "\nPrinting fatfs info:" << std::endl;
-    std::cout << "----------------------" << std::endl;
-    std::cout << fatfs.info() << std::endl;
-
-    std::cout << "\nListing at: " << fatfs.current().name() << std::endl;
-    std::cout << "------------" << std::endl;
-    fatfs.print_dirs();
-    fatfs.print_files();
-
-    path = "Nested 1 Dir1";
-    std::cout << "\nChanging directory with path: " << path << std::endl;
-    fatfs.change_dir(path);
-
-    std::cout << "\nPrinting fatfs info:" << std::endl;
-    std::cout << "----------------------" << std::endl;
-    std::cout << fatfs.info() << std::endl;
-
-    std::cout << "\nListing at: " << fatfs.current().name() << std::endl;
-    std::cout << "------------" << std::endl;
-    fatfs.print_dirs();
-    fatfs.print_files();
-
-    dirname = "Nested 2 Dir1";
-    std::cout << "\nAdding directory: " << dirname << std::endl;
-    try {
-        fatfs.add_dir(dirname);
-    } catch(const std::exception &e) {
-        std::cout << "Cannot add: " << e.what() << std::endl;
-    }
-
-    std::cout << "\nPrinting fatfs info:" << std::endl;
-    std::cout << "----------------------" << std::endl;
-    std::cout << fatfs.info() << std::endl;
-
-    std::cout << "\nListing at: " << fatfs.current().name() << std::endl;
-    std::cout << "------------" << std::endl;
-    fatfs.print_dirs();
-    fatfs.print_files();
-
-    path = "/Dir1 @ root/Nested 1 Dir1/Nested 2 Dir1";
-    std::cout << "\nChanging directory with path: " << path << std::endl;
-    fatfs.change_dir(path);
-
-    std::cout << "\nPrinting fatfs info:" << std::endl;
-    std::cout << "----------------------" << std::endl;
-    std::cout << fatfs.info() << std::endl;
-
-    std::cout << "\nListing at: " << fatfs.current().name() << std::endl;
-    std::cout << "------------" << std::endl;
-    fatfs.print_dirs();
-    fatfs.print_files();
+    delete[] buff;
 
     path = "/";
     std::cout << "\nChanging directory with path: " << path << std::endl;
     fatfs.change_dir(path);
-
-    std::cout << "\nPrinting fatfs info:" << std::endl;
-    std::cout << "----------------------" << std::endl;
-    std::cout << fatfs.info() << std::endl;
-
-    std::cout << "\nListing at: " << fatfs.current().name() << std::endl;
-    std::cout << "------------" << std::endl;
-    fatfs.print_dirs();
-    fatfs.print_files();
-
-    dirname = "Dir1 @ root/Nested 1 Dir1/Nested 2 Dir1/Nested 3 Dir1";
-    std::cout << "\nAdding directory: " << dirname << std::endl;
-    try {
-        fatfs.add_dir(dirname);
-    } catch(const std::exception &e) {
-        std::cout << "Cannot add: " << e.what() << std::endl;
-    }
-
-    std::cout << "\nPrinting fatfs info:" << std::endl;
-    std::cout << "----------------------" << std::endl;
-    std::cout << fatfs.info() << std::endl;
-
-    std::cout << "\nListing at: " << fatfs.current().name() << std::endl;
-    std::cout << "------------" << std::endl;
-    fatfs.print_dirs();
-    fatfs.print_files();
-
-    path = "Dir1 @ root/Nested 1 Dir1/Nested 2 Dir1/";
-    std::cout << "\nChanging directory with path: " << path << std::endl;
-    fatfs.change_dir(path);
-
-    std::cout << "\nPrinting fatfs info:" << std::endl;
-    std::cout << "----------------------" << std::endl;
-    std::cout << fatfs.info() << std::endl;
-
-    std::cout << "\nListing at: " << fatfs.current().name() << std::endl;
-    std::cout << "------------" << std::endl;
-    fatfs.print_dirs();
-    fatfs.print_files();
-
-    path = "/";
-    std::cout << "\nChanging directory with path: " << path << std::endl;
-    fatfs.change_dir(path);
-
-    std::ostringstream oss;
 
     fatfs.print_all(oss, ".", true);
     std::cout << oss.str() << std::endl;
