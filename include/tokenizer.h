@@ -20,7 +20,7 @@
 
 class Tokenizer {
 public:
-    enum Size { MAX_BUF = 1024 };
+    enum Size { MAX_BUF = 5120 };
 
     // CONSTRUCTORS
     Tokenizer(std::size_t max_buf = MAX_BUF);

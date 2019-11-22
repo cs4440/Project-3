@@ -9,6 +9,7 @@
 #include <cstdio>        // remove()
 #include <cstring>       // strncpy(), memset()
 #include <ctime>         // ctime(), time_t
+#include <iomanip>       // setw()
 #include <iostream>      // stream
 #include <list>          // list
 #include <set>           // set
@@ -119,9 +120,16 @@ public:
     int dotdot() const { return *_dotdot; }
     int dircell_index() const { return *_dircell_index; }
     int filecell_index() const { return *_filecell_index; }
+    int size() const { return *_size; }
     time_t created() const { return *_created; }
+    time_t* created_ptr() const { return _created; }
+    char* created_str() const { return std::ctime(_created); }
     time_t last_accessed() const { return *_last_accessed; }
+    time_t* last_accessed_ptr() const { return _created; }
+    char* last_accessed_str() const { return std::ctime(_last_accessed); }
     time_t last_modified() const { return *_last_modified; }
+    time_t* last_modified_ptr() const { return _created; }
+    char* last_modified_str() const { return std::ctime(_last_modified); }
 
     // set address if DirEntry was not created with valid address
     void set_address(char* address) { _reset_address(address); }
@@ -224,11 +232,18 @@ public:
     std::string name() const { return std::string(_name); }
     bool type() const { return *_type; }
     int dot() const { return *_dot; }
+    int dotdot() const { return *_dotdot; }
     int datacell_index() const { return *_datacell_index; }
     int size() const { return *_size; }
     time_t created() const { return *_created; }
+    time_t* created_ptr() const { return _created; }
+    char* created_str() const { return std::ctime(_created); }
     time_t last_accessed() const { return *_last_accessed; }
+    time_t* last_accessed_ptr() const { return _created; }
+    char* last_accessed_str() const { return std::ctime(_last_accessed); }
     time_t last_modified() const { return *_last_modified; }
+    time_t* last_modified_ptr() const { return _created; }
+    char* last_modified_str() const { return std::ctime(_last_modified); }
 
     // set address if FileEntry was not created with valid address
     void set_address(char* address) { _reset_address(address); }
@@ -458,9 +473,12 @@ public:
     DirEntry current() const;        // return current directory entry
 
     // print directory at path, default to cwd of "."
-    void print_dirs(std::ostream& outs = std::cout, std::string path = ".");
-    void print_files(std::ostream& outs = std::cout, std::string path = ".");
-    void print_all(std::ostream& outs = std::cout, std::string path = ".");
+    void print_dirs(std::ostream& outs = std::cout, std::string path = ".",
+                    bool is_details = false);
+    void print_files(std::ostream& outs = std::cout, std::string path = ".",
+                     bool is_details = false);
+    void print_all(std::ostream& outs = std::cout, std::string path = ".",
+                   bool is_details = false);
 
     void set_name(std::string name);
     DirEntry add_dir(std::string path);     // add last entry in path
@@ -536,6 +554,11 @@ private:
 
     // parse a path of string named entries; return a valid DirEntry if found
     DirEntry _parse_dir_entries(std::list<std::string>& entries);
+
+    void _find_entries_len_details(DirSet& entries_set, std::size_t& name_len,
+                                   std::size_t& byte_len);
+    void _find_entries_len_details(FileSet& entries_set, std::size_t& name_len,
+                                   std::size_t& byte_len);
 };
 
 }  // namespace fs

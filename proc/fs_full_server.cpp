@@ -160,11 +160,17 @@ void *connection_handler(void *socketfd) {
             std::cout << client_msg << std::endl;
 
             if(client_msg.size()) {
-                // tokenize/parse client message into arguments
-                parser.clear();
-                parser.set_string(client_msg.c_str());
-                parser.parse();
-                tokens = parser.get_tokens();
+                try {
+                    // tokenize/parse client message into arguments
+                    parser.clear();
+                    parser.set_string(client_msg.c_str());
+                    parser.parse();
+                    tokens = parser.get_tokens();
+                } catch(const std::exception &e) {
+                    std::cout << "error" << std::endl;
+                    sock::send_msg(sockfd, "1 ERROR Command too long");
+                    continue;
+                }
 
                 // Exit
                 if(tokens[0] == "exit") {
@@ -362,7 +368,7 @@ void cd(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs) {
 }
 
 void ls(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs) {
-    bool is_list_details = false;
+    bool is_details = false;
     char opts[] = "1l";
     char **argv = nullptr;
     int argc = tokens.size(), opt = -1;
@@ -384,7 +390,7 @@ void ls(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs) {
         switch(opt) {
             case '1':
             case 'l':
-                is_list_details = true;
+                is_details = true;
                 break;
             default:
                 break;
@@ -403,7 +409,7 @@ void ls(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs) {
         }
 
     // print path to ostringstream and then pass oss to socket
-    fatfs.print_all(oss, *path);
+    fatfs.print_all(oss, *path, is_details);
     sock::send_msg(sockfd, oss.str());
 }
 

@@ -111,11 +111,16 @@ void *connection_handler(void *socketfd) {
             std::cout << client_msg << std::endl;
 
             if(client_msg.size()) {
-                // tokenize/parse client message into arguments
-                parser.clear();
-                parser.set_string(client_msg.c_str());
-                parser.parse();
-                tokens = parser.get_tokens();
+                try {
+                    // tokenize/parse client message into arguments
+                    parser.clear();
+                    parser.set_string(client_msg.c_str());
+                    parser.parse();
+                    tokens = parser.get_tokens();
+                } catch(const std::exception &e) {
+                    sock::send_msg(sockfd, "1 ERROR Command too long");
+                    continue;
+                }
 
                 // Exit
                 if(tokens[0] == "exit") {

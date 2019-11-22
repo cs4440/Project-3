@@ -41,7 +41,7 @@ struct Ansi {
     Ansi(int c) : _code(c) {}
 
     friend std::ostream& operator<<(std::ostream& outs, const Ansi& l) {
-        return outs << "\033[" << std::to_string(l._code) << "m";
+        return outs << "\033[" << l._code << 'm';
     }
 };
 

@@ -60,7 +60,7 @@ int main() {
     fatfs.print_dirs();
     fatfs.print_files();
 
-    dirname = "Dir2 @ root";
+    dirname = "Dir2 @ root yyyyyyyyy";
     std::cout << "\nAdding directory: " << dirname << std::endl;
     try {
         fatfs.add_dir(dirname);
@@ -77,7 +77,7 @@ int main() {
     fatfs.print_dirs();
     fatfs.print_files();
 
-    dirname = "Dir3 @ root";
+    dirname = "Dir3 @ root zzzzzzzzzzzzzzzzzzz";
     std::cout << "\nAdding directory: " << dirname << std::endl;
     try {
         fatfs.add_dir(dirname);
@@ -341,12 +341,14 @@ int main() {
     fatfs.print_dirs();
     fatfs.print_files();
 
-    // fatfs.change_dir("/path1/path2/");
-    // fatfs.change_dir("/path1");
-    // fatfs.change_dir("/path1/");
-    // fatfs.change_dir("path1/path2");
+    path = "/";
+    std::cout << "\nChanging directory with path: " << path << std::endl;
+    fatfs.change_dir(path);
 
-    // fatfs.change_dir("path1/path2/");
+    std::ostringstream oss;
+
+    fatfs.print_all(oss, ".", true);
+    std::cout << oss.str() << std::endl;
 
     fatfs.remove();
 
