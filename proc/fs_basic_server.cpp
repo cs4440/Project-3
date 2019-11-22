@@ -65,7 +65,7 @@ void *connection_handler(void *socketfd) {
     std::string client_msg;
     Parser parser;
     std::vector<std::string> tokens;
-    std::string diskname = "basic-client";
+    std::string diskname = "client-fs-basic";
 
     // create disk with default settings
     fs::FatFS fatfs;
@@ -74,7 +74,7 @@ void *connection_handler(void *socketfd) {
 
     // static messages
     std::string welcome =
-        "WELCOME TO SERVER\n\n"
+        "WELCOME TO BASIC FILESYSTEM SERVER\n\n"
         "FILE SYSTEM COMMANDS:\n"
         "---------------------\n"
         "[F]ormat filesystem of disk size [CYLINDER] [SECTOR]: 'F [C] [S]'\n"

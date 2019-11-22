@@ -64,7 +64,7 @@ void *connection_handler(void *socketfd) {
     std::string client_msg;
     Parser parser;
     std::vector<std::string> tokens;
-    std::string diskname = "client";
+    std::string diskname = "client-disk";
 
     // create disk with default settings
     fs::Disk disk(diskname, CYLINDERS, SECTORS);
@@ -72,7 +72,7 @@ void *connection_handler(void *socketfd) {
 
     // static messages
     std::string welcome =
-        "WELCOME TO SERVER\n\n"
+        "WELCOME TO DISK SERVER\n\n"
         "Available commands are:\n"
         "[C]reate - Create/initialize disk. 'C [CYL] [SEC]'\n"
         "[D]elete - Delete current disk\n"

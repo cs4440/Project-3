@@ -1,7 +1,7 @@
-#include <cstdlib>
-#include <cstring>
-#include <iostream>
-#include "../include/socket.h"
+#include <cstdlib>                  // atoi()
+#include <iostream>                 // io stream
+#include "../include/ansi_style.h"  // terminaal ANSI styling in unix
+#include "../include/socket.h"      // socket Client class
 
 int main(int argc, char* argv[]) {
     bool exit = false;
@@ -27,7 +27,8 @@ int main(int argc, char* argv[]) {
         std::cout << server_msg << std::endl;
 
         while(!exit) {
-            std::cout << "> ";
+            using namespace style;
+            std::cout << Ansi(BOLD) << Ansi(RED) << "> " << Ansi(RESET);
             std::getline(std::cin, line);
 
             if(line.size()) {

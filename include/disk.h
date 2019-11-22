@@ -2,11 +2,11 @@
 #define DISK_H
 
 #include <fcntl.h>      // file constants
-#include <stdio.h>      // remove()
 #include <sys/mman.h>   // mmap()
 #include <sys/stat.h>   // path stat and constants
 #include <sys/types.h>  // unix types
 #include <unistd.h>     // open(), read(), write(), usleep()
+#include <cstdio>       // remove()
 #include <cstring>      // strncpy()
 #include <stdexcept>    // std::exception
 #include <string>       // std::string

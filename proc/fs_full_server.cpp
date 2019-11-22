@@ -5,7 +5,7 @@
 #include "../include/disk.h"    // Disk class
 #include "../include/fat.h"     // Disk class
 #include "../include/parser.h"  // Parser, get cli tokens with grammar
-#include "../include/socket.h"  // Socket class
+#include "../include/socket.h"  // socket Server class
 
 // GLOBALS
 int TRACK_TIME = 10;  // in microseconds
@@ -107,7 +107,7 @@ void *connection_handler(void *socketfd) {
     std::string client_msg;
     Parser parser;
     std::vector<std::string> tokens;
-    std::string diskname = "full-client";
+    std::string diskname = "client-fs-full";
 
     // create disk with default settings
     fs::FatFS fatfs;
@@ -117,7 +117,7 @@ void *connection_handler(void *socketfd) {
     // static messages
     std::string unknown_cmd = "Command not found";
     std::string welcome =
-        "WELCOME TO SERVER\n\n"
+        "WELCOME TO FILESYSTEM SERVER\n\n"
         "FILE SYSTEM COMMANDS:\n"
         "---------------------\n"
         "mkfs [CYLINDER] [SECTOR]\tCreate filesystem size of cylinder x "

@@ -243,8 +243,10 @@ void FatFS::print_dirs(std::ostream &outs, std::string path) {
     // get an ordered set of Entry by comparator
     _dirs_at(dir, entries);
 
+    using namespace style;
     for(auto it = entries.begin(); it != entries.end(); ++it) {
-        outs << it->name();
+        outs << Ansi(BOLD) << Ansi(BLUE) << Ansi(REVERSE) << it->name()
+             << Ansi(RESET);
 
         auto next = it;
         if(++next != entries.end()) outs << '\n';
@@ -274,6 +276,8 @@ void FatFS::print_files(std::ostream &outs, std::string path) {
 }
 
 void FatFS::print_all(std::ostream &outs, std::string path) {
+    using namespace style;
+
     DirEntry dir;
     std::list<std::string> path_entries;
     DirSet dir_entries(cmp_dir_name);
@@ -291,17 +295,19 @@ void FatFS::print_all(std::ostream &outs, std::string path) {
     // get an ordered set of Entry by comparator
     _files_at(dir, file_entries);
 
+    using namespace style;
     for(auto it = dir_entries.begin(); it != dir_entries.end(); ++it) {
-        outs << it->name();
+        outs << Ansi(BOLD) << Ansi(BLUE) << Ansi(REVERSE) << it->name()
+             << Ansi(RESET);
 
         auto next = it;
         if(++next != dir_entries.end()) outs << '\n';
     }
-
     if(!dir_entries.empty() && !file_entries.empty()) outs << '\n';
 
     for(auto it = file_entries.begin(); it != file_entries.end(); ++it) {
-        outs << it->name();
+        outs << Ansi(RESET) << Ansi(BOLD) << Ansi(BLUE) << it->name()
+             << Ansi(RESET);
 
         auto next = it;
         if(++next != file_entries.end()) outs << '\n';

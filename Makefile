@@ -9,18 +9,17 @@ SRC             := src
 PROC            := proc
 TESTDIR         := tests
 TESTS           := test
-UTILS           := utils.o
 PARSER          := state_machine.o token.o tokenizer.o parser.o
 DISK            := disk.o
 FS              := $(DISK) fat.o
 SOCKET          := socket.o
 BASIC_SERVER    := basic_client basic_server
 DIR_LISTING     := dir_listing_client dir_listing_server
-DISK_SERVER     := $(UTILS) $(PARSER) $(SOCKET) $(DISK)\
+DISK_SERVER     := $(PARSER) $(SOCKET) $(DISK)\
                    disk_client disk_client_rand disk_server
-FS_BASIC        := $(UTILS) $(PARSER) $(SOCKET) $(FS) fs_basic_client\
+FS_BASIC        := $(PARSER) $(SOCKET) $(FS) fs_basic_client\
                    fs_basic_server
-FS_FULL         := $(UTILS) $(PARSER) $(SOCKET) $(FS) fs_full_client\
+FS_FULL         := $(PARSER) $(SOCKET) $(FS) fs_full_client\
                    fs_full_server
 ALL             := $(BASIC_SERVER) $(DIR_LISTING) $(DISK_SERVER) $(FS_BASIC)\
                    $(FS_FULL)
@@ -108,18 +107,14 @@ fs-full: $(FS_FULL)
 fs_full_client: fs_full_client.o $(SOCKET)
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
-fs_full_client.o: $(PROC)/fs_full_client.cpp
+fs_full_client.o: $(PROC)/fs_full_client.cpp\
+	${INC}/ansi_style.h
 	$(CXX) $(CXXFLAGS) -c $<
 
 fs_full_server: fs_full_server.o  $(PARSER) $(FS) $(SOCKET)
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 fs_full_server.o: $(PROC)/fs_full_server.cpp
-	$(CXX) $(CXXFLAGS) -c $<
-
-# UTILS
-utils.o: ${SRC}/utils.cpp\
-	${INC}/utils.h
 	$(CXX) $(CXXFLAGS) -c $<
 
 # SOCKET
@@ -151,7 +146,8 @@ disk.o: ${SRC}/disk.cpp\
 
 # FILESYSTEM
 fat.o: ${SRC}/fat.cpp\
-	${INC}/fat.h
+	${INC}/fat.h\
+	${INC}/ansi_style.h
 	$(CXX) $(CXXFLAGS) -c $<
 
 # TESTS

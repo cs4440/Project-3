@@ -1,20 +1,21 @@
 #ifndef DAT_H
 #define DAT_H
 
-#include <fcntl.h>      // io macro
-#include <stdio.h>      // remove()
-#include <sys/mman.h>   // mmap()
-#include <sys/stat.h>   // fstat
-#include <sys/types.h>  // struct stat
-#include <unistd.h>     // open()
-#include <cstring>      // strncpy(), memset()
-#include <ctime>        // ctime(), time_t
-#include <iostream>     // stream
-#include <list>         // list
-#include <set>          // set
-#include <stdexcept>    // exception
-#include <string>       // string
-#include "disk.h"       // Disk class
+#include <fcntl.h>       // io macro
+#include <sys/mman.h>    // mmap()
+#include <sys/stat.h>    // fstat
+#include <sys/types.h>   // struct stat
+#include <unistd.h>      // open()
+#include <cstdio>        // remove()
+#include <cstring>       // strncpy(), memset()
+#include <ctime>         // ctime(), time_t
+#include <iostream>      // stream
+#include <list>          // list
+#include <set>           // set
+#include <stdexcept>     // exception
+#include <string>        // string
+#include "ansi_style.h"  // terminaal ANSI styling in unix
+#include "disk.h"        // Disk class
 
 namespace fs {
 
@@ -491,6 +492,7 @@ private:
     int _logical_blocks;  // number of available blocks in disk after format
     int _block_offset;    // block offset after format
 
+    // create a root DirEntry at begining of logical blocks
     void _init_root();
 
     // add dir or file at given directory
@@ -532,6 +534,7 @@ private:
     // tokenize a path string and return a list of name entries
     void _tokenize_path(std::string path, std::list<std::string>& entries);
 
+    // parse a path of string named entries; return a valid DirEntry if found
     DirEntry _parse_dir_entries(std::list<std::string>& entries);
 };
 
