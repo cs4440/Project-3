@@ -3,11 +3,7 @@
 namespace fs {
 
 // ENTRY COMPARATORS
-bool cmp_dir_name(const DirEntry &a, const DirEntry &b) {
-    return a.name() < b.name();
-}
-
-bool cmp_file_name(const FileEntry &a, const FileEntry &b) {
+bool cmp_entry_name(const Entry &a, const Entry &b) {
     return a.name() < b.name();
 }
 
@@ -237,7 +233,7 @@ void FatFS::print_dirs(std::ostream &outs, std::string path,
     std::size_t max_name_len = 0, max_byte_len = 0;
     DirEntry dir;
     std::list<std::string> entries_path;
-    DirSet entries(cmp_dir_name);
+    DirSet entries(cmp_entry_name);
 
     // tokenize a path string to list of named entries
     _tokenize_path(path, entries_path);
@@ -279,7 +275,7 @@ void FatFS::print_files(std::ostream &outs, std::string path,
     std::size_t max_name_len = 0, max_byte_len = 0;
     DirEntry dir;
     std::list<std::string> entries_path;
-    FileSet entries(cmp_file_name);
+    FileSet entries(cmp_entry_name);
 
     // tokenize a path string to list of named entries
     _tokenize_path(path, entries_path);
@@ -320,8 +316,8 @@ void FatFS::print_all(std::ostream &outs, std::string path,
     std::size_t max_name_len = 0, max_byte_len = 0;
     DirEntry dir;
     std::list<std::string> path_entries;
-    DirSet dir_entries(cmp_dir_name);
-    FileSet file_entries(cmp_file_name);
+    DirSet dir_entries(cmp_entry_name);
+    FileSet file_entries(cmp_entry_name);
 
     // tokenize a path string to list of named entries
     _tokenize_path(path, path_entries);

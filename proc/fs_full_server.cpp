@@ -397,7 +397,7 @@ void ls(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs) {
         }
     }
 
-    // dellocate argv
+    // deallocate argv
     for(std::size_t i = 0; i < tokens.size(); ++i) delete[] argv[i];
     delete[] argv;
 

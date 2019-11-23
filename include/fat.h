@@ -87,42 +87,33 @@ struct FatCell {
 };
 
 /*******************************************************************************
- * Class to representation of a Directory Entry in a disk block.
- * Subdirectories (DirEntry's) are contained in dir_head linked list.
- * Files (FileEntry's) are contained in file_head linked list.
+ * Entry is the base class to hold metadata in a disk.
  *
  * Structure of Entry
- * |      name     | valid | type | dot | dotdot | dir ptr | file ptr | times...
- *  char* MAX_NAME   bool    bool   int    int       int       int      time_t
+ * |      name     | valid | type | dot | dotdot | timestamps...
+ *  char* MAX_NAME   bool    bool   int    int       time_t
  *
  * Default values when constructed with valid address:
  * name: null bytes
  * type: ENTRY:DIR
  * dot: ENTRY::ENDBLOCK, self pointer
  * dotdot: ENTRY:ENDBLOCK, parent pointer
- * dir_head: ENTRY:ENDBLOCK, head pointer of linked list to DirEntry
- * file_head: ENTRY:ENDBLOCK, head pointer of linked list to FileEntry
  * created: current time
  * last_accessed: current time
  * last_modified: current time
  ******************************************************************************/
-class DirEntry {
+class Entry {
 public:
-    DirEntry(char* address = nullptr) { _reset_address(address); }
+    Entry(char* address = nullptr) { _reset_address(address); }
 
-    bool has_dirs() const { return dir_head() > ENTRY::ENDBLOCK; }
-    bool has_files() const { return file_head() > ENTRY::ENDBLOCK; }
     bool has_parent() const { return dotdot() != ENTRY::ENDBLOCK; }
     bool valid() const { return _name != nullptr; }
     operator bool() const { return _name != nullptr; }  // explicit bool conv
-    void clear() { _reset_address(nullptr); };
 
     std::string name() const { return std::string(_name); }
     bool type() const { return *_type; }
     int dot() const { return *_dot; }
     int dotdot() const { return *_dotdot; }
-    int dir_head() const { return *_dir_head; }
-    int file_head() const { return *_file_head; }
     int size() const { return *_size; }
     time_t created() const { return *_created; }
     time_t* created_ptr() const { return _created; }
@@ -134,23 +125,25 @@ public:
     time_t* last_modified_ptr() const { return _created; }
     char* last_modified_str() const { return std::ctime(_last_modified); }
 
-    // set address if DirEntry was not created with valid address
-    void set_address(char* address) { _reset_address(address); }
-
-    // clear and initialize all fields to default values
+    // Clear and initialize all fields to default values
+    // Must init when adding a new and fresh Entry!
     // WARNING: will delete existing data!
     void init() {
         memset(_name, 0, ENTRY::MAX_NAME);
         set_type(ENTRY::DIR);
         set_dot(ENTRY::ENDBLOCK);
         set_dotdot(ENTRY::ENDBLOCK);
-        set_dir_head(ENTRY::ENDBLOCK);
-        set_file_head(ENTRY::ENDBLOCK);
         set_size(0);
         update_created();
         update_last_accessed();
         update_last_modified();
     }
+
+    // clear the entry with invalid state
+    void clear() { _reset_address(nullptr); };
+
+    // set address if DirEntry was not created with valid address
+    void set_address(char* address) { _reset_address(address); }
 
     void set_name(std::string name) {
         if(name.size() > ENTRY::MAX_NAME)
@@ -163,8 +156,6 @@ public:
     void set_type(bool type) { *_type = type; }
     void set_dot(int block) { *_dot = block; }
     void set_dotdot(int block) { *_dotdot = block; }
-    void set_dir_head(int cell) { *_dir_head = cell; }
-    void set_file_head(int cell) { *_file_head = cell; }
     void set_size(int size) { *_size = size; }
     void inc_size(int inc) { *_size += inc; }
     void dec_size(int dec) { *_size -= dec; }
@@ -175,150 +166,143 @@ public:
     void set_last_modified(time_t t) { *_last_modified = t; }
     void update_last_modified() { *_last_modified = std::time(_last_modified); }
 
-    friend bool operator<(const DirEntry& lhs, const DirEntry& rhs) {
+    friend bool operator<(const Entry& lhs, const Entry& rhs) {
         return lhs.name() < rhs.name();
     }
+
+protected:
+    char* _name;
+    bool* _type;
+    int* _dot;
+    int* _dotdot;
+    int* _size;
+    time_t* _created;
+    time_t* _last_accessed;
+    time_t* _last_modified;
 
     void _reset_address(char* address) {
         _name = address;
         _type = (bool*)(_name + ENTRY::MAX_NAME);
         _dot = (int*)(_type + 1);
         _dotdot = _dot + 1;
-        _dir_head = _dotdot + 1;
-        _file_head = _dir_head + 1;
-        _size = _file_head + 1;
+        _size = _dotdot + 1;
         _created = (time_t*)(_size + 1);
         _last_accessed = _created + 1;
         _last_modified = _last_accessed + 1;
     }
-
-private:
-    char* _name;
-    bool* _type;
-    int* _dot;
-    int* _dotdot;
-    int* _dir_head;
-    int* _file_head;
-    int* _size;
-    time_t* _created;
-    time_t* _last_accessed;
-    time_t* _last_modified;
 };
 
 /*******************************************************************************
- * Class to representation of a Directory Entry in a disk block.
- * File data blocks (DataEntry's) are contained in data_head linked list.
+ * DirEntry is an extension of the Entry class for a directory.
+ * It add these attributes: dir_head and file_head, which are linked list head
+ * ptr to directory/file entry block in disk.
  *
  * Structure of Entry
- * |      name      | valid | type | data ptr | times...
- *  char* MAX_NAME    bool    bool      int     time_t
+ * |   Entry   | dir_head | file_head
+ *                 int         int
  *
  * Default values when constructed with valid address:
- * name: null bytes
- * type: ENTRY:DIR
- * dot: ENTRY::ENDBLOCK, self pointer
- * dotdot: ENTRY:ENDBLOCK, parent pointer
- * data_head: ENTRY:ENDBLOCK, head pointer linked list to DataEntry
- * size: size of entire FileEntry with data blocks
- * data_size: bytes of all data links (does not include nul byte)
- * created: current time
- * last_accessed: current time
- * last_modified: current time
+ * dir_head: ENTRY:ENDBLOCK, head pointer of linked list to DirEntry
+ * file_head: ENTRY:ENDBLOCK, head pointer of linked list to FileEntry
  ******************************************************************************/
-class FileEntry {
+class DirEntry : public Entry {
 public:
-    FileEntry(char* address = nullptr) { _reset_address(address); }
+    DirEntry(char* address = nullptr) : Entry(address) { _init_dir(); }
 
-    bool has_data() const { return data_head() > ENTRY::ENDBLOCK; }
-    bool valid() const { return _name != nullptr; }
-    operator bool() const { return _name != nullptr; }  // explicit bool conv
+    bool has_dirs() const { return dir_head() > ENTRY::ENDBLOCK; }
+    bool has_files() const { return file_head() > ENTRY::ENDBLOCK; }
+    int dir_head() const { return *_dir_head; }
+    int file_head() const { return *_file_head; }
 
-    std::string name() const { return std::string(_name); }
-    bool type() const { return *_type; }
-    int dot() const { return *_dot; }
-    int dotdot() const { return *_dotdot; }
-    int data_head() const { return *_data_head; }
-    int size() const { return *_size; }
-    int data_size() const { return *_data_size; }
-    time_t created() const { return *_created; }
-    time_t* created_ptr() const { return _created; }
-    char* created_str() const { return std::ctime(_created); }
-    time_t last_accessed() const { return *_last_accessed; }
-    time_t* last_accessed_ptr() const { return _created; }
-    char* last_accessed_str() const { return std::ctime(_last_accessed); }
-    time_t last_modified() const { return *_last_modified; }
-    time_t* last_modified_ptr() const { return _created; }
-    char* last_modified_str() const { return std::ctime(_last_modified); }
-
-    // set address if FileEntry was not created with valid address
-    void set_address(char* address) { _reset_address(address); }
-
-    // clear and initialize all fields to default values
+    // Clear and initialize all fields to default values
+    // Must init when adding a new and fresh Entry!
     // WARNING: will delete existing data!
     void init() {
-        memset(_name, 0, ENTRY::MAX_NAME);
-        set_type(ENTRY::FILE);
-        set_dot(ENTRY::ENDBLOCK);
-        set_dotdot(ENTRY::ENDBLOCK);
-        set_data_head(ENTRY::ENDBLOCK);
-        set_size(0);
-        set_data_size(0);
-        update_created();
-        update_last_accessed();
-        update_last_modified();
+        Entry::init();
+        set_dir_head(ENTRY::ENDBLOCK);
+        set_file_head(ENTRY::ENDBLOCK);
     }
 
-    void set_name(std::string name) {
-        if(name.size() > ENTRY::MAX_NAME)
-            throw std::range_error("File name size exceeded");
+    // clear the entry with invalid state
+    void clear() { DirEntry::_reset_address(nullptr); };
 
-        memset(_name, 0, ENTRY::MAX_NAME);
-        strncpy(_name, name.c_str(), name.size());
+    // set address if DirEntry was not created with valid address
+    void set_address(char* address) { DirEntry::_reset_address(address); }
+
+    void set_dir_head(int cell) { *_dir_head = cell; }
+    void set_file_head(int cell) { *_file_head = cell; }
+
+protected:
+    int* _dir_head;   // dir entry head ptr
+    int* _file_head;  // file entry head ptr
+
+    // set address offsets from Entry's last adddress
+    void _init_dir() {
+        _dir_head = (int*)(_last_modified + 1);
+        _file_head = _dir_head + 1;
     }
 
-    void set_type(bool type) { *_type = type; }
-    void set_dot(int block) { *_dot = block; }
-    void set_dotdot(int block) { *_dotdot = block; }
-    void set_data_head(int cell) { *_data_head = cell; }
-    void set_size(int size) { *_size = size; }
-    void inc_size(int inc) { *_size += inc; }
-    void dec_size(int dec) { *_size -= dec; }
-    void set_data_size(int size) { *_data_size = size; }
-    void set_created(time_t t) { *_created = t; }
-    void update_created() { *_created = std::time(_created); }
-    void set_last_accessed(time_t t) { *_last_accessed = t; }
-    void update_last_accessed() { *_last_accessed = std::time(_last_accessed); }
-    void set_last_modified(time_t t) { *_last_modified = t; }
-    void update_last_modified() { *_last_modified = std::time(_last_modified); }
-
-    friend bool operator<(const FileEntry& lhs, const FileEntry& rhs) {
-        return lhs.name() < rhs.name();
-    }
-
+    // reset all attribute addresses
     void _reset_address(char* address) {
-        _name = address;
-        _type = (bool*)(_name + ENTRY::MAX_NAME);
-        _dot = (int*)(_type + 1);
-        _dotdot = _dot + 1;
-        _data_head = _dotdot + 1;
-        _size = _data_head + 1;
-        _data_size = _size + 1;
-        _created = (time_t*)(_data_size + 1);
-        _last_accessed = _created + 1;
-        _last_modified = _last_accessed + 1;
+        Entry::_reset_address(address);
+        _init_dir();
+    }
+};
+
+/*******************************************************************************
+ * FileEntry is an extension of the Entry class for a file.
+ * It add these attributes: data_head (linked list ptr to start of data blocks)
+ * and data_size (the size of all data, not rounded up to data blocks).
+ *
+ * Structure of Entry
+ * |   Entry   | data_head | data_size
+ *                  int         int
+ *
+ * Default values when constructed with valid address:
+ * data_head: ENTRY:ENDBLOCK, head pointer linked list to DataEntry
+ * data_size: bytes of all data links (does not include nul byte)
+ ******************************************************************************/
+class FileEntry : public Entry {
+public:
+    FileEntry(char* address = nullptr) : Entry(address) { _init_file(); }
+
+    bool has_data() const { return data_head() > ENTRY::ENDBLOCK; }
+    int data_head() const { return *_data_head; }
+    int data_size() const { return *_data_size; }
+
+    // Clear and initialize all fields to default values
+    // Must init when adding a new and fresh Entry!
+    // WARNING: will delete existing data!
+    void init() {
+        Entry::init();
+        set_data_head(ENTRY::ENDBLOCK);
+        set_data_size(0);
     }
 
-private:
-    char* _name;
-    bool* _type;
-    int* _dot;
-    int* _dotdot;
-    int* _data_head;
-    int* _size;
-    int* _data_size;
-    time_t* _created;
-    time_t* _last_accessed;
-    time_t* _last_modified;
+    // clear the entry with invalid state
+    void clear() { FileEntry::_reset_address(nullptr); };
+
+    // set address if FileEntry was not created with valid address
+    void set_address(char* address) { FileEntry::_reset_address(address); }
+
+    void set_data_head(int cell) { *_data_head = cell; }
+    void set_data_size(int size) { *_data_size = size; }
+
+protected:
+    int* _data_head;  // data block head ptr
+    int* _data_size;  // size of data (stops at nul byte)
+
+    // set address offsets from Entry's last adddress
+    void _init_file() {
+        _data_head = (int*)(_last_modified + 1);
+        _data_size = _data_head + 1;
+    }
+
+    // reset all attribute addresses
+    void _reset_address(char* address) {
+        Entry::_reset_address(address);
+        _init_file();
+    }
 };
 
 /*******************************************************************************
@@ -386,8 +370,7 @@ private:
 };
 
 // ENTRY COMPARATORS
-bool cmp_dir_name(const DirEntry& a, const DirEntry& b);
-bool cmp_file_name(const FileEntry& a, const FileEntry& b);
+bool cmp_entry_name(const Entry& a, const Entry& b);
 
 /*******************************************************************************
  * Class to representation of File Allocation Table (FAT), which is comprised
@@ -460,10 +443,8 @@ private:
 class FatFS {
 public:
     // Set of DirEntry and FileEntry with custom Comparison object
-    typedef std::set<DirEntry, bool (*)(const DirEntry&, const DirEntry&)>
-        DirSet;
-    typedef std::set<FileEntry, bool (*)(const FileEntry&, const FileEntry&)>
-        FileSet;
+    typedef std::set<DirEntry, bool (*)(const Entry&, const Entry&)> DirSet;
+    typedef std::set<FileEntry, bool (*)(const Entry&, const Entry&)> FileSet;
 
     enum { META_SZ = 3 * sizeof(int) };  // filesystem metadata at start of disk
 
