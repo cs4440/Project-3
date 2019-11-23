@@ -3,7 +3,12 @@
 namespace fs {
 
 // ENTRY COMPARATORS
-bool cmp_entry_name(const Entry &a, const Entry &b) {
+bool Entry::cmp_entry(const Entry &a, const Entry &b) {
+    return std::forward_as_tuple(a.type(), a.name()) <
+           std::forward_as_tuple(b.type(), b.name());
+}
+
+bool Entry::cmp_entry_name(const Entry &a, const Entry &b) {
     return a.name() < b.name();
 }
 
@@ -233,7 +238,7 @@ void FatFS::print_dirs(std::ostream &outs, std::string path,
     std::size_t max_name_len = 0, max_byte_len = 0;
     DirEntry dir;
     std::list<std::string> entries_path;
-    DirSet entries(cmp_entry_name);
+    DirSet entries(Entry::cmp_entry_name);
 
     // tokenize a path string to list of named entries
     _tokenize_path(path, entries_path);
@@ -241,7 +246,7 @@ void FatFS::print_dirs(std::ostream &outs, std::string path,
     // find a valid end point of the path of named entries
     dir = _parse_dir_entries(entries_path);
 
-    // get an ordered set of Entry by comparator
+    // get an ordered set of DirEntry by comparator
     _dirs_at(dir, entries);
 
     // find max name column size
@@ -261,7 +266,6 @@ void FatFS::print_dirs(std::ostream &outs, std::string path,
             tm_info = std::localtime(it->last_modified_ptr());
             outs << ' ' << std::put_time(tm_info, "%b %d %H:%M");
         }
-
         auto next = it;
         if(++next != entries.end()) outs << '\n';
     }
@@ -275,7 +279,7 @@ void FatFS::print_files(std::ostream &outs, std::string path,
     std::size_t max_name_len = 0, max_byte_len = 0;
     DirEntry dir;
     std::list<std::string> entries_path;
-    FileSet entries(cmp_entry_name);
+    FileSet entries(Entry::cmp_entry_name);
 
     // tokenize a path string to list of named entries
     _tokenize_path(path, entries_path);
@@ -283,7 +287,7 @@ void FatFS::print_files(std::ostream &outs, std::string path,
     // find a valid end point of the path of named entries
     dir = _parse_dir_entries(entries_path);
 
-    // get an ordered set of Entry by comparator
+    // get an ordered set of FileEntry by comparator
     _files_at(dir, entries);
 
     // find max name column size
@@ -302,7 +306,6 @@ void FatFS::print_files(std::ostream &outs, std::string path,
             tm_info = std::localtime(it->last_modified_ptr());
             outs << ' ' << std::put_time(tm_info, "%b %d %H:%M");
         }
-
         auto next = it;
         if(++next != entries.end()) outs << '\n';
     }
@@ -316,8 +319,7 @@ void FatFS::print_all(std::ostream &outs, std::string path,
     std::size_t max_name_len = 0, max_byte_len = 0;
     DirEntry dir;
     std::list<std::string> path_entries;
-    DirSet dir_entries(cmp_entry_name);
-    FileSet file_entries(cmp_entry_name);
+    EntrySet entries(Entry::cmp_entry);
 
     // tokenize a path string to list of named entries
     _tokenize_path(path, path_entries);
@@ -326,38 +328,18 @@ void FatFS::print_all(std::ostream &outs, std::string path,
     dir = _parse_dir_entries(path_entries);
 
     // get an ordered set of Entry by comparator
-    _dirs_at(dir, dir_entries);
-
-    // get an ordered set of Entry by comparator
-    _files_at(dir, file_entries);
+    _entries_at(dir, entries);
 
     // find max name column size
-    if(is_details) {
-        _find_entries_len_details(dir_entries, max_name_len, max_byte_len);
-        _find_entries_len_details(file_entries, max_name_len, max_byte_len);
-    }
+    if(is_details)
+        _find_entries_len_details(entries, max_name_len, max_byte_len);
 
-    for(auto it = dir_entries.begin(); it != dir_entries.end(); ++it) {
-        outs << Ansi(BOLD) << Ansi(BLUE) << Ansi(REVERSE) << it->name()
-             << Ansi(RESET);
+    for(auto it = entries.begin(); it != entries.end(); ++it) {
+        outs << Ansi(BOLD) << Ansi(BLUE);
 
-        if(is_details)
-            outs << std::setw(max_name_len - it->name().size() + 1) << ' ';
+        if(is_details && it->type() == Entry::DIR) outs << Ansi(REVERSE);
 
-        if(is_details) {
-            outs << std::right << std::setw(max_byte_len) << it->size();
-
-            tm_info = std::localtime(it->last_modified_ptr());
-            outs << ' ' << std::put_time(tm_info, "%b %d %H:%M");
-        }
-
-        auto next = it;
-        if(++next != dir_entries.end()) outs << '\n';
-    }
-    if(!dir_entries.empty() && !file_entries.empty()) outs << '\n';
-
-    for(auto it = file_entries.begin(); it != file_entries.end(); ++it) {
-        outs << Ansi(BOLD) << Ansi(BLUE) << it->name() << Ansi(RESET);
+        outs << it->name() << Ansi(RESET);
 
         if(is_details)
             outs << std::setw(max_name_len - it->name().size() + 1) << ' ';
@@ -368,9 +350,8 @@ void FatFS::print_all(std::ostream &outs, std::string path,
             tm_info = std::localtime(it->last_modified_ptr());
             outs << ' ' << std::put_time(tm_info, "%b %d %H:%M");
         }
-
         auto next = it;
-        if(++next != file_entries.end()) outs << '\n';
+        if(++next != entries.end()) outs << '\n';
     }
 }
 
@@ -679,9 +660,9 @@ DirEntry FatFS::_add_dir_at(DirEntry &target, std::string name) {
 
     if(_fat.full()) throw std::runtime_error("Disk size full");
 
-    if(name.size() > ENTRY::MAX_NAME - 1)
+    if(name.size() > Entry::MAX_NAME - 1)
         throw std::length_error("File name size exceeded: " +
-                                std::to_string(ENTRY::MAX_NAME - 1));
+                                std::to_string(Entry::MAX_NAME - 1));
 
     if(target) {
         // find if file name exists
@@ -743,9 +724,9 @@ FileEntry FatFS::_add_file_at(DirEntry &target, std::string name) {
 
     if(_fat.full()) throw std::runtime_error("Disk size full");
 
-    if(name.size() > ENTRY::MAX_NAME - 1)
+    if(name.size() > Entry::MAX_NAME - 1)
         throw std::range_error("File name size exceeded: " +
-                               std::to_string(ENTRY::MAX_NAME - 1));
+                               std::to_string(Entry::MAX_NAME - 1));
 
     if(target) {
         // check if dir name exists
@@ -794,6 +775,36 @@ FileEntry FatFS::_add_file_at(DirEntry &target, std::string name) {
         }
     }
     return file;
+}
+
+void FatFS::_entries_at(DirEntry &dir_entry, EntrySet &entries_set) const {
+    FatCell dircell;
+    FatCell filecell;
+
+    // clear directory if not empty
+    entries_set.clear();
+
+    // iterate DirEntry linked list
+    if(_disk && dir_entry && dir_entry.has_dirs()) {
+        entries_set.emplace(_disk->file_at(dir_entry.dir_head()));
+        dircell = _fat.get_cell(dir_entry.dir_head());
+
+        while(dircell.has_next()) {
+            entries_set.emplace(_disk->file_at(dircell.cell()));
+            dircell = _fat.get_cell(dircell.cell());
+        }
+    }
+
+    // iterate FileEntry linked list
+    if(_disk && dir_entry && dir_entry.has_files()) {
+        entries_set.emplace(_disk->file_at(dir_entry.file_head()));
+        filecell = _fat.get_cell(dir_entry.file_head());
+
+        while(filecell.has_next()) {
+            entries_set.emplace(_disk->file_at(filecell.cell()));
+            filecell = _fat.get_cell(filecell.cell());
+        }
+    }
 }
 
 // dir_entry: directory entry to start looking at
@@ -1192,6 +1203,20 @@ DirEntry FatFS::_parse_dir_entries(std::list<std::string> &entries) const {
         }
     }
     return dir;
+}
+
+void FatFS::_find_entries_len_details(EntrySet &entries_set,
+                                      std::size_t &name_len,
+                                      std::size_t &byte_len) const {
+    std::size_t name_size = 0, byte_size = 0;
+
+    for(const Entry &d : entries_set) {
+        name_size = d.name().size();
+        byte_size = std::to_string(d.size()).size();
+
+        if(name_len < name_size) name_len = name_size;
+        if(byte_len < byte_size) byte_len = byte_size;
+    }
 }
 
 void FatFS::_find_entries_len_details(DirSet &entries_set,

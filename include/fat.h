@@ -15,76 +15,11 @@
 #include <set>           // set
 #include <stdexcept>     // exception
 #include <string>        // string
+#include <tuple>         // forward_as_tuple()
 #include "ansi_style.h"  // terminaal ANSI styling in unix
 #include "disk.h"        // Disk class
 
 namespace fs {
-
-enum ENTRY { DIR = 0, FILE = 1, ENDBLOCK = -1, MAX_NAME = 79 };
-
-/*******************************************************************************
- * Data representation of a cell in File Allocation Table (FAT).
- * The FatCell is an array element of the FAT at a specified address.
- * The FatCell is also like a node in a linked list in the FAT. The status of
- * the node is marked by the _next_cell's value. If the cell is not free, then
- * it points to the next cell or signal end of block. If cell is free, it
- * points nowhere.
- *
- * Structure of a cell: [ int next cell/block #]
- * Size: sizeof(int) for each fat cell
- *
- * Value of cell: FREE or USED
- *  - USED state is FatCell::END or greater
- *  - FREE state is FatCell::FREE or less
- ******************************************************************************/
-struct FatCell {
-    enum {
-        FREE = ENTRY::ENDBLOCK - 1,  // indicates free cell
-        END = ENTRY::ENDBLOCK,       // end of cell/block indicator
-        SIZE = sizeof(int)           // bytes of a FatCell
-    };
-
-    int* _next_cell;
-
-    // CONSTRUCTOR
-    FatCell(char* address = nullptr) : _next_cell((int*)(address)) {}
-
-    bool valid() const { return _next_cell != nullptr; }
-    bool has_next() const { return _next_cell != nullptr && *_next_cell > END; }
-    bool free() const { return *_next_cell <= FREE; }
-    bool used() const { return *_next_cell > FREE; }
-
-    // get cell/block data from address
-    int cell() const { return *_next_cell; }
-
-    // set cell/block from address
-    void set_free() { *_next_cell = FREE; }
-    void set_next_cell(int c) { *_next_cell = c; }
-
-    friend bool operator==(const FatCell& lhs, const FatCell& rhs) {
-        return lhs.cell() == rhs.cell();
-    }
-
-    friend bool operator!=(const FatCell& lhs, const FatCell& rhs) {
-        return lhs.cell() != rhs.cell();
-    }
-
-    friend bool operator<(const FatCell& lhs, const FatCell& rhs) {
-        return lhs.cell() < rhs.cell();
-    }
-
-    friend bool operator<=(const FatCell& lhs, const FatCell& rhs) {
-        return lhs.cell() <= rhs.cell();
-    }
-
-    friend bool operator>(const FatCell& lhs, const FatCell& rhs) {
-        return lhs.cell() > rhs.cell();
-    }
-
-    friend bool operator>=(const FatCell& lhs, const FatCell& rhs) {
-        return lhs.cell() >= rhs.cell();
-    }
-};
 
 /*******************************************************************************
  * Entry is the base class to hold metadata in a disk.
@@ -96,7 +31,7 @@ struct FatCell {
  * Default values when constructed with valid address:
  * name: null bytes
  * type: ENTRY:DIR
- * dot: ENTRY::ENDBLOCK, self pointer
+ * dot: Entry::ENDBLOCK, self pointer
  * dotdot: ENTRY:ENDBLOCK, parent pointer
  * created: current time
  * last_accessed: current time
@@ -104,9 +39,17 @@ struct FatCell {
  ******************************************************************************/
 class Entry {
 public:
+    enum { DIR = 0, FILE = 1, ENDBLOCK = -1, MAX_NAME = 79 };
+
+    // ENTRY COMPARATORS
+    // compare entry by type and then by name
+    static bool cmp_entry(const Entry& a, const Entry& b);
+    // compare entry just by name
+    static bool cmp_entry_name(const Entry& a, const Entry& b);
+
     Entry(char* address = nullptr) { _reset_address(address); }
 
-    bool has_parent() const { return dotdot() != ENTRY::ENDBLOCK; }
+    bool has_parent() const { return dotdot() != Entry::ENDBLOCK; }
     bool valid() const { return _name != nullptr; }
     operator bool() const { return _name != nullptr; }  // explicit bool conv
 
@@ -129,10 +72,10 @@ public:
     // Must init when adding a new and fresh Entry!
     // WARNING: will delete existing data!
     void init() {
-        memset(_name, 0, ENTRY::MAX_NAME);
-        set_type(ENTRY::DIR);
-        set_dot(ENTRY::ENDBLOCK);
-        set_dotdot(ENTRY::ENDBLOCK);
+        memset(_name, 0, Entry::MAX_NAME);
+        set_type(Entry::DIR);
+        set_dot(Entry::ENDBLOCK);
+        set_dotdot(Entry::ENDBLOCK);
         set_size(0);
         update_created();
         update_last_accessed();
@@ -146,10 +89,10 @@ public:
     void set_address(char* address) { _reset_address(address); }
 
     void set_name(std::string name) {
-        if(name.size() > ENTRY::MAX_NAME)
+        if(name.size() > Entry::MAX_NAME)
             throw std::range_error("File name size exceeded");
 
-        memset(_name, 0, ENTRY::MAX_NAME);
+        memset(_name, 0, Entry::MAX_NAME);
         strncpy(_name, name.c_str(), name.size());
     }
 
@@ -182,7 +125,7 @@ protected:
 
     void _reset_address(char* address) {
         _name = address;
-        _type = (bool*)(_name + ENTRY::MAX_NAME);
+        _type = (bool*)(_name + Entry::MAX_NAME);
         _dot = (int*)(_type + 1);
         _dotdot = _dot + 1;
         _size = _dotdot + 1;
@@ -209,8 +152,8 @@ class DirEntry : public Entry {
 public:
     DirEntry(char* address = nullptr) : Entry(address) { _init_dir(); }
 
-    bool has_dirs() const { return dir_head() > ENTRY::ENDBLOCK; }
-    bool has_files() const { return file_head() > ENTRY::ENDBLOCK; }
+    bool has_dirs() const { return dir_head() > Entry::ENDBLOCK; }
+    bool has_files() const { return file_head() > Entry::ENDBLOCK; }
     int dir_head() const { return *_dir_head; }
     int file_head() const { return *_file_head; }
 
@@ -219,8 +162,9 @@ public:
     // WARNING: will delete existing data!
     void init() {
         Entry::init();
-        set_dir_head(ENTRY::ENDBLOCK);
-        set_file_head(ENTRY::ENDBLOCK);
+        set_type(Entry::DIR);
+        set_dir_head(Entry::ENDBLOCK);
+        set_file_head(Entry::ENDBLOCK);
     }
 
     // clear the entry with invalid state
@@ -266,7 +210,7 @@ class FileEntry : public Entry {
 public:
     FileEntry(char* address = nullptr) : Entry(address) { _init_file(); }
 
-    bool has_data() const { return data_head() > ENTRY::ENDBLOCK; }
+    bool has_data() const { return data_head() > Entry::ENDBLOCK; }
     int data_head() const { return *_data_head; }
     int data_size() const { return *_data_size; }
 
@@ -275,7 +219,8 @@ public:
     // WARNING: will delete existing data!
     void init() {
         Entry::init();
-        set_data_head(ENTRY::ENDBLOCK);
+        set_type(Entry::FILE);
+        set_data_head(Entry::ENDBLOCK);
         set_data_size(0);
     }
 
@@ -369,8 +314,69 @@ private:
     char* _data;
 };
 
-// ENTRY COMPARATORS
-bool cmp_entry_name(const Entry& a, const Entry& b);
+/*******************************************************************************
+ * Data representation of a cell in File Allocation Table (FAT).
+ * The FatCell is an array element of the FAT at a specified address.
+ * The FatCell is also like a node in a linked list in the FAT. The status of
+ * the node is marked by the _next_cell's value. If the cell is not free, then
+ * it points to the next cell or signal end of block. If cell is free, it
+ * points nowhere.
+ *
+ * Structure of a cell: [ int next cell/block #]
+ * Size: sizeof(int) for each fat cell
+ *
+ * Value of cell: FREE or USED
+ *  - USED state is FatCell::END or greater
+ *  - FREE state is FatCell::FREE or less
+ ******************************************************************************/
+struct FatCell {
+    enum {
+        FREE = Entry::ENDBLOCK - 1,  // indicates free cell
+        END = Entry::ENDBLOCK,       // end of cell/block indicator
+        SIZE = sizeof(int)           // bytes of a FatCell
+    };
+
+    int* _next_cell;
+
+    // CONSTRUCTOR
+    FatCell(char* address = nullptr) : _next_cell((int*)(address)) {}
+
+    bool valid() const { return _next_cell != nullptr; }
+    bool has_next() const { return _next_cell != nullptr && *_next_cell > END; }
+    bool free() const { return *_next_cell <= FREE; }
+    bool used() const { return *_next_cell > FREE; }
+
+    // get cell/block data from address
+    int cell() const { return *_next_cell; }
+
+    // set cell/block from address
+    void set_free() { *_next_cell = FREE; }
+    void set_next_cell(int c) { *_next_cell = c; }
+
+    friend bool operator==(const FatCell& lhs, const FatCell& rhs) {
+        return lhs.cell() == rhs.cell();
+    }
+
+    friend bool operator!=(const FatCell& lhs, const FatCell& rhs) {
+        return lhs.cell() != rhs.cell();
+    }
+
+    friend bool operator<(const FatCell& lhs, const FatCell& rhs) {
+        return lhs.cell() < rhs.cell();
+    }
+
+    friend bool operator<=(const FatCell& lhs, const FatCell& rhs) {
+        return lhs.cell() <= rhs.cell();
+    }
+
+    friend bool operator>(const FatCell& lhs, const FatCell& rhs) {
+        return lhs.cell() > rhs.cell();
+    }
+
+    friend bool operator>=(const FatCell& lhs, const FatCell& rhs) {
+        return lhs.cell() >= rhs.cell();
+    }
+};
 
 /*******************************************************************************
  * Class to representation of File Allocation Table (FAT), which is comprised
@@ -443,6 +449,7 @@ private:
 class FatFS {
 public:
     // Set of DirEntry and FileEntry with custom Comparison object
+    typedef std::set<Entry, bool (*)(const Entry&, const Entry&)> EntrySet;
     typedef std::set<DirEntry, bool (*)(const Entry&, const Entry&)> DirSet;
     typedef std::set<FileEntry, bool (*)(const Entry&, const Entry&)> FileSet;
 
@@ -513,6 +520,7 @@ private:
     FileEntry _add_file_at(DirEntry& target, std::string name);
 
     // get a set of all entry at given directory entry by comparison function
+    void _entries_at(DirEntry& dir_entry, EntrySet& entries_set) const;
     void _dirs_at(DirEntry& dir_entry, DirSet& entries_set) const;
     void _files_at(DirEntry& dir_entry, FileSet& entries_set) const;
 
@@ -554,6 +562,9 @@ private:
     // parse a path of string named entries; return a valid DirEntry if found
     DirEntry _parse_dir_entries(std::list<std::string>& entries) const;
 
+    // find max name length and size length
+    void _find_entries_len_details(EntrySet& entries_set, std::size_t& name_len,
+                                   std::size_t& byte_len) const;
     void _find_entries_len_details(DirSet& entries_set, std::size_t& name_len,
                                    std::size_t& byte_len) const;
     void _find_entries_len_details(FileSet& entries_set, std::size_t& name_len,
