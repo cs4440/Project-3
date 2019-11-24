@@ -30,9 +30,9 @@ namespace fs {
  *
  * Default values when constructed with valid address:
  * name: null bytes
- * type: ENTRY:DIR
+ * type: Entry:DIR
  * dot: Entry::ENDBLOCK, self pointer
- * dotdot: ENTRY:ENDBLOCK, parent pointer
+ * dotdot: Entry:ENDBLOCK, parent pointer
  * created: current time
  * last_accessed: current time
  * last_modified: current time
@@ -145,8 +145,8 @@ protected:
  *                 int         int
  *
  * Default values when constructed with valid address:
- * dir_head: ENTRY:ENDBLOCK, head pointer of linked list to DirEntry
- * file_head: ENTRY:ENDBLOCK, head pointer of linked list to FileEntry
+ * dir_head: Entry:ENDBLOCK, head pointer of linked list to DirEntry
+ * file_head: Entry:ENDBLOCK, head pointer of linked list to FileEntry
  ******************************************************************************/
 class DirEntry : public Entry {
 public:
@@ -203,7 +203,7 @@ protected:
  *                  int         int
  *
  * Default values when constructed with valid address:
- * data_head: ENTRY:ENDBLOCK, head pointer linked list to DataEntry
+ * data_head: Entry:ENDBLOCK, head pointer linked list to DataEntry
  * data_size: bytes of all data links (does not include nul byte)
  ******************************************************************************/
 class FileEntry : public Entry {
@@ -232,6 +232,8 @@ public:
 
     void set_data_head(int cell) { *_data_head = cell; }
     void set_data_size(int size) { *_data_size = size; }
+    void inc_data_size(int size) { *_data_size += size; }
+    void dec_data_size(int size) { *_data_size -= size; }
 
 protected:
     int* _data_head;  // data block head ptr
@@ -264,51 +266,25 @@ public:
     DataEntry(char* address = nullptr) : _data(address) {}
 
     bool valid() const { return _data != nullptr; }
+    operator bool() const { return _data != nullptr; }  // explicit bool conv
+
     char* data() { return _data; }
-    void clear() { memset(_data, 0, Disk::MAX_BLOCK); }
+    void clear(std::size_t size) { memset(_data, 0, size); }
 
     // read data up to Disk::MAX_BLOCK and return successful bytes read
-    std::size_t read(char* buf, std::size_t size) {
-        std::size_t bytes = 0;
-
-        while(bytes < Disk::MAX_BLOCK && _data[bytes] != '\0' && bytes < size) {
-            buf[bytes] = _data[bytes];
-            ++bytes;
-        }
-
-        return bytes;
-    }
+    std::size_t read(char* buf, std::size_t size, std::size_t limit);
 
     // write data up to Disk::MAX_BLOCK and return successful bytes read
-    std::size_t write(const char* src, std::size_t size,
-                      bool is_nullfill = true) {
-        if(size > Disk::MAX_BLOCK) {
-            memcpy(_data, src, Disk::MAX_BLOCK);
-            return Disk::MAX_BLOCK;
-        } else {
-            memcpy(_data, src, size);
+    std::size_t write(const char* src, std::size_t size, std::size_t limit,
+                      bool is_nullfill = true);
+    std::size_t write(char* src, std::size_t size, std::size_t limit,
+                      bool is_nullfill = true);
 
-            if(is_nullfill)
-                while(size < Disk::MAX_BLOCK) _data[size++] = '\0';
-
-            return size;
-        }
-    }
-
-    // write data up to Disk::MAX_BLOCK and return successful bytes read
-    std::size_t write(char* src, std::size_t size, bool is_nullfill = true) {
-        if(size > Disk::MAX_BLOCK) {
-            memcpy(_data, src, Disk::MAX_BLOCK);
-            return Disk::MAX_BLOCK;
-        } else {
-            memcpy(_data, src, size);
-
-            if(is_nullfill)
-                while(size < Disk::MAX_BLOCK) _data[size++] = '\0';
-
-            return size;
-        }
-    }
+    // append data up to Disk::MAX_BLOCK and return successful bytes read
+    std::size_t append(const char* src, std::size_t size, std::size_t offset,
+                       std::size_t limit, bool is_nullfill = true);
+    std::size_t append(char* src, std::size_t size, std::size_t offset,
+                       std::size_t limit, bool is_nullfill = true);
 
 private:
     char* _data;
@@ -342,6 +318,8 @@ struct FatCell {
     FatCell(char* address = nullptr) : _next_cell((int*)(address)) {}
 
     bool valid() const { return _next_cell != nullptr; }
+    operator bool() const { return _next_cell != nullptr; }
+
     bool has_next() const { return _next_cell != nullptr && *_next_cell > END; }
     bool free() const { return *_next_cell <= FREE; }
     bool used() const { return *_next_cell > FREE; }
@@ -499,6 +477,10 @@ public:
     std::size_t write_file_data(FileEntry& file_entry, const char* data,
                                 std::size_t size);
 
+    // append data buffer to file entry
+    std::size_t append_file_data(FileEntry& file_entry, const char* data,
+                                 std::size_t size);
+
     // remove all data blocks for this file entry
     void remove_file_data(FileEntry& file_entry);
 
@@ -554,6 +536,7 @@ private:
     FatCell _last_filecell_from_dir(DirEntry& dir_entry) const;
     FatCell _last_datacell_from_file(FileEntry& file_entry) const;
     FatCell _last_cell_from_cell(int cell_offset) const;
+    FatCell _sec_last_cell_from_cell(int cell_offset) const;
 
     // tokenize a path string and return a list of name entries
     void _tokenize_path(std::string path,

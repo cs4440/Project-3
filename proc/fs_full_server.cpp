@@ -43,6 +43,9 @@ void read(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs);
 // write data to file
 void write(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs);
 
+// append data to file
+void append(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs);
+
 // change to path
 void cd(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs);
 
@@ -129,6 +132,7 @@ void *connection_handler(void *socketfd) {
         "rm [NAME]\t\t\tRemove a file\n"
         "read [NAME]\t\t\tRead file data\n"
         "write [NAME] [DATA]\t\tWrite data to file\n"
+        "append [NAME] [DATA]\t\tAppend data to file\n"
         "cd [PATH]\t\t\tChange directory to PATH\n"
         "ls\t\t\t\tList path contents\n"
         "pwd\t\t\t\tList path contents\n"
@@ -145,8 +149,7 @@ void *connection_handler(void *socketfd) {
             fatfs.set_disk(&disk);
             fatfs.open_disk();
             welcome +=
-                "Filessytem exists in server. Using existing file system\n" +
-                fatfs.info();
+                "Filessytem exists in server. Using existing file system\n";
         } else
             welcome += need_create;
     } catch(const std::exception &e) {
@@ -200,6 +203,8 @@ void *connection_handler(void *socketfd) {
                     fs::read(sockfd, tokens, fatfs);
                 else if(tokens[0] == "write" || tokens[0] == "W")
                     fs::write(sockfd, tokens, fatfs);
+                else if(tokens[0] == "append" || tokens[0] == "A")
+                    fs::append(sockfd, tokens, fatfs);
                 else if(tokens[0] == "cd")
                     fs::cd(sockfd, tokens, fatfs);
                 else if(tokens[0] == "ls" || tokens[0] == "L")
@@ -343,6 +348,27 @@ void write(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs) {
             else {
                 fatfs.write_file_data(file, tokens[2].c_str(),
                                       tokens[2].size());
+
+                sock::send_msg(sockfd, "0");
+            }
+        } catch(const std::exception &e) {
+            sock::send_msg(sockfd, "2 " + std::string(e.what()));
+        }
+    }
+}
+
+void append(int sockfd, std::vector<std::string> &tokens, fs::FatFS &fatfs) {
+    if(tokens.size() < 3)
+        sock::send_msg(sockfd, "ERROR Insufficient arguments for write");
+    else {
+        try {
+            fs::FileEntry file = fatfs.find_file(tokens[1]);
+
+            if(!file)
+                sock::send_msg(sockfd, "1 No file exists");
+            else {
+                fatfs.append_file_data(file, tokens[2].c_str(),
+                                       tokens[2].size());
 
                 sock::send_msg(sockfd, "0");
             }

@@ -84,45 +84,24 @@ int main() {
         std::cout << "Cannot add: " << e.what() << std::endl;
     }
 
-    data =
-        "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
-        "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
-        "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
-        "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
-        "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
-        "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz1";
-    fatfs.write_file_data(fentry, data.c_str(), data.size());
+    data = "hello world";
+    fentry = fatfs.find_file(filename);
+    fatfs.append_file_data(fentry, data.c_str(), data.size());
 
     buff = new char[fentry.data_size() + 1];
-    fatfs.read_file_data(fentry, buff, data.size());
+    bytes = fatfs.read_file_data(fentry, buff, fentry.data_size());
+    buff[bytes] = '\0';
     std::cout << buff << std::endl;
 
     delete[] buff;
 
-    data =
-        "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
-        "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
-        "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
-        "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
-        "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
-        "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz1";
-    fatfs.write_file_data(fentry, data.c_str(), data.size());
+    data = " end of world";
+    fentry = fatfs.find_file(filename);
+    fatfs.append_file_data(fentry, data.c_str(), data.size());
 
     buff = new char[fentry.data_size() + 1];
-    fatfs.read_file_data(fentry, buff, data.size());
-    std::cout << buff << std::endl;
-
-    delete[] buff;
-
-    data =
-        "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
-        "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
-        "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
-        "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz1";
-    fatfs.write_file_data(fentry, data.c_str(), data.size());
-
-    buff = new char[fentry.data_size() + 1];
-    fatfs.read_file_data(fentry, buff, data.size());
+    bytes = fatfs.read_file_data(fentry, buff, fentry.data_size());
+    buff[bytes] = '\0';
     std::cout << buff << std::endl;
 
     delete[] buff;

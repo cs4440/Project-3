@@ -12,6 +12,88 @@ bool Entry::cmp_entry_name(const Entry &a, const Entry &b) {
     return a.name() < b.name();
 }
 
+// read data up to Disk::MAX_BLOCK and return successful bytes read
+std::size_t DataEntry::read(char *buf, std::size_t size, std::size_t limit) {
+    std::size_t bytes = 0;
+
+    while(bytes < limit && _data[bytes] != '\0' && bytes < size) {
+        buf[bytes] = _data[bytes];
+        ++bytes;
+    }
+
+    return bytes;
+}
+
+// write data up to Disk::MAX_BLOCK and return successful bytes read
+std::size_t DataEntry::write(const char *src, std::size_t size,
+                             std::size_t limit, bool is_nullfill) {
+    if(size > limit) {
+        memcpy(_data, src, limit);
+        return limit;
+    } else {
+        memcpy(_data, src, size);
+
+        if(is_nullfill)
+            while(size < limit) _data[size++] = '\0';
+
+        return size;
+    }
+}
+
+// write data up to Disk::MAX_BLOCK and return successful bytes read
+std::size_t DataEntry::write(char *src, std::size_t size, std::size_t limit,
+                             bool is_nullfill) {
+    if(size > limit) {
+        memcpy(_data, src, limit);
+        return limit;
+    } else {
+        memcpy(_data, src, size);
+
+        if(is_nullfill)
+            while(size < limit) _data[size++] = '\0';
+
+        return size;
+    }
+}
+
+// append data up to Disk::MAX_BLOCK and return successful bytes read
+std::size_t DataEntry::append(const char *src, std::size_t size,
+                              std::size_t offset, std::size_t limit,
+                              bool is_nullfill) {
+    std::size_t avail = limit - offset;
+    char *data = _data + offset;
+
+    if(size > avail) {
+        memcpy(data, src, avail);
+        return avail;
+    } else {
+        memcpy(data, src, size);
+
+        if(is_nullfill)
+            while(size < limit) data[size++] = '\0';
+
+        return size;
+    }
+}
+
+// append data up to Disk::MAX_BLOCK and return successful bytes read
+std::size_t DataEntry::append(char *src, std::size_t size, std::size_t offset,
+                              std::size_t limit, bool is_nullfill) {
+    std::size_t avail = limit - offset;
+
+    if(size > avail) {
+        memcpy(_data + offset, src, avail);
+        return avail;
+    } else {
+        memcpy(_data + offset, src, avail);
+
+        if(is_nullfill)
+            while(size < limit) _data[size++] = '\0';
+
+        return size;
+    }
+}
+
 Fat::Fat(char *address, int cells, int cell_offset)
     : _file(address), _cells(cells), _cell_offset(cell_offset) {}
 
@@ -67,10 +149,10 @@ std::size_t Fat::size() const { return _free.size(); }
 std::size_t Fat::full() const { return _free.size() == 0; }
 
 FatCell Fat::get_cell(int index) const {
-    if((index - _cell_offset) < _cells)
+    if((index - _cell_offset) > -1 && (index - _cell_offset) < _cells)
         return FatCell(_file + (index - _cell_offset) * FatCell::SIZE);
     else
-        throw std::range_error("Cell index out of bound");
+        return FatCell(nullptr);
 }
 
 FatFS::FatFS(Disk *disk) : _disk(disk) {}
@@ -509,12 +591,13 @@ std::size_t FatFS::read_file_data(FileEntry &file_entry, char *data,
     if(!_disk) throw std::runtime_error("No disk or filesystem");
 
     if(file_entry) {
+        std::size_t max_block = _disk->max_block();
         file_entry.update_last_accessed();
 
         if(file_entry.has_data()) {
             // get first data entry from file entry data pointer
             data_entry = _disk->file_at(file_entry.data_head());
-            bytes = data_entry.read(data, size);
+            bytes = data_entry.read(data, size, max_block);
 
             // get next data block
             datacell = _fat.get_cell(file_entry.data_head());
@@ -522,7 +605,7 @@ std::size_t FatFS::read_file_data(FileEntry &file_entry, char *data,
             // read the rest of the data entry links
             while(datacell.has_next()) {
                 data_entry = _disk->file_at(datacell.cell());
-                bytes += data_entry.read(data + bytes, size);
+                bytes += data_entry.read(data + bytes, size, max_block);
 
                 // get next data block
                 datacell = _fat.get_cell(datacell.cell());
@@ -537,7 +620,7 @@ std::size_t FatFS::read_file_data(FileEntry &file_entry, char *data,
 std::size_t FatFS::write_file_data(FileEntry &file_entry, const char *data,
                                    std::size_t size) {
     int freeindex, bytes_to_write = size, blocks = 0;
-    std::size_t bytes = 0, prev_file_size = file_entry.size();
+    std::size_t bytes = 0;
     FatCell freecell, prevcell;
     DataEntry data_entry;
     std::set<int>::iterator it;
@@ -549,6 +632,9 @@ std::size_t FatFS::write_file_data(FileEntry &file_entry, const char *data,
     if(file_entry) {
         if(size > (file_entry.size() + _fat.size() * _disk->max_block()))
             throw std::runtime_error("Not enough space to write data");
+
+        std::size_t prev_file_size = file_entry.size();
+        std::size_t max_block = _disk->max_block();
 
         // update file entry timestamps
         file_entry.update_last_accessed();
@@ -573,7 +659,7 @@ std::size_t FatFS::write_file_data(FileEntry &file_entry, const char *data,
         data_entry = _disk->file_at(freeindex);
 
         // write first data block
-        bytes = data_entry.write(data + bytes, bytes_to_write);
+        bytes = data_entry.write(data, bytes_to_write, max_block);
         bytes_to_write -= bytes;
         data += bytes;
         blocks += 1;
@@ -597,7 +683,7 @@ std::size_t FatFS::write_file_data(FileEntry &file_entry, const char *data,
             data_entry = _disk->file_at(freeindex);
 
             // write data blocks
-            bytes = data_entry.write(data, bytes_to_write);
+            bytes = data_entry.write(data, bytes_to_write, max_block);
             bytes_to_write -= bytes;
             data += bytes;
             blocks += 1;
@@ -606,6 +692,116 @@ std::size_t FatFS::write_file_data(FileEntry &file_entry, const char *data,
         // update file entry size for data
         file_entry.set_data_size(size);
         file_entry.set_size(128 + blocks * _disk->max_block());
+
+        // update parents size
+        _update_parents_size(DirEntry(_disk->file_at(file_entry.dotdot())),
+                             file_entry.size() - prev_file_size);
+
+        return size;
+    } else
+        return 0;
+}
+
+std::size_t FatFS::append_file_data(FileEntry &file_entry, const char *data,
+                                    std::size_t size) {
+    int freeindex, bytes_to_write = size, blocks = 0;
+    std::size_t bytes = 0;
+    FatCell nextcell, prevcell, sec_last;
+    DataEntry data_entry;
+    std::set<int>::iterator it;
+
+    if(!_disk) throw std::runtime_error("No disk or filesystem");
+
+    if(_fat.full()) throw std::runtime_error("Disk size full");
+
+    if(file_entry) {
+        if(size > _fat.size() * _disk->max_block())
+            throw std::runtime_error("Not enough space to write data");
+
+        std::size_t prev_file_size = file_entry.size();
+        std::size_t max_block = _disk->max_block();
+
+        // update file entry timestamps
+        file_entry.update_last_accessed();
+        file_entry.update_last_modified();
+
+        // find offset
+        std::size_t append =
+            file_entry.size() - _disk->max_block() - file_entry.data_size();
+
+        // if append is 0 size, then the last block is full
+        // so write a new data block
+        if(append == 0) {
+            // get a free cell to start writing
+            it = _fat.free_blocks().begin();
+            freeindex = *it;
+            _fat.free_blocks().erase(it);
+            nextcell = _fat.get_cell(freeindex);
+            nextcell.set_next_cell(FatCell::END);
+
+            // connect file_entry's da{ta pointer to freeindex
+            if(file_entry.has_data())
+                _last_datacell_from_file(file_entry).set_next_cell(freeindex);
+            else
+                file_entry.set_data_head(freeindex);
+
+            // get DataEntry with nextcell's block pointer
+            data_entry = _disk->file_at(freeindex);
+
+            // write first data block
+            bytes = data_entry.write(data, bytes_to_write, max_block);
+            bytes_to_write -= bytes;
+            data += bytes;
+            blocks += 1;
+        } else {
+            // get second last FatCell from file to get last index
+            sec_last = _sec_last_cell_from_cell(file_entry.data_head());
+
+            if(sec_last.has_next()) {
+                nextcell = _fat.get_cell(sec_last.cell());
+                data_entry = _disk->file_at(sec_last.cell());
+            } else {  // data_head is the only entry
+                nextcell = _fat.get_cell(file_entry.data_head());
+                data_entry = _disk->file_at(file_entry.data_head());
+            }
+
+            // get offset to continue writing from last non-nul char
+            std::size_t offset = _disk->max_block() - append;
+
+            // append data to this data entry
+            bytes = data_entry.append(data, bytes_to_write, offset, max_block);
+            bytes_to_write -= bytes;
+            data += bytes;
+        }
+
+        // write rest of data to data links
+        while(bytes_to_write > 0) {
+            // store previous cell
+            prevcell = nextcell;
+
+            // get a free cell to start writing
+            it = _fat.free_blocks().begin();
+            freeindex = *it;
+            _fat.free_blocks().erase(it);
+            nextcell = _fat.get_cell(freeindex);
+            nextcell.set_next_cell(FatCell::END);
+
+            // connect previous cell to freeindex
+            prevcell.set_next_cell(freeindex);
+
+            // get DataEntr with nextcell's block pointer
+            data_entry = _disk->file_at(freeindex);
+
+            // write data blocks
+            bytes = data_entry.write(data, bytes_to_write, max_block);
+            bytes_to_write -= bytes;
+            data += bytes;
+            blocks += 1;
+        }
+
+        // update file entry size for data
+        file_entry.inc_data_size(size);
+        file_entry.inc_size(blocks * _disk->max_block());
 
         // update parents size
         _update_parents_size(DirEntry(_disk->file_at(file_entry.dotdot())),
@@ -1155,6 +1351,17 @@ FatCell FatFS::_last_cell_from_cell(int start_cell) const {
     while(current.has_next()) current = _fat.get_cell(current.cell());
 
     return current;
+}
+
+FatCell FatFS::_sec_last_cell_from_cell(int start_cell) const {
+    FatCell current, prev;
+    current = prev = _fat.get_cell(start_cell);
+
+    while(current.has_next()) {
+        prev = current;
+        current = _fat.get_cell(current.cell());
+    }
+    return prev;
 }
 
 void FatFS::_tokenize_path(std::string path,

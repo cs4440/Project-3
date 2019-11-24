@@ -89,9 +89,7 @@ void *connection_handler(void *socketfd) {
     // try to open disk if disk file exists
     try {
         if(disk.open(diskname))
-            welcome += "Disk exists in system. Using existing disk: " +
-                       std::to_string(disk.cylinder()) + " " +
-                       std::to_string(disk.sector());
+            welcome += "Disk exists in system. Using existing disk\n";
         else
             welcome += need_create;
     } catch(const std::exception &e) {

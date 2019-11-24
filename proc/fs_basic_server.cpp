@@ -96,8 +96,7 @@ void *connection_handler(void *socketfd) {
             fatfs.set_disk(&disk);
             fatfs.open_disk();
             welcome +=
-                "Filessytem exists in server. Using existing file system\n" +
-                fatfs.info();
+                "Filessytem exists in server. Using existing file system\n";
         } else
             welcome += need_create;
     } catch(const std::exception &e) {
