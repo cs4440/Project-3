@@ -324,35 +324,23 @@ struct FatCell {
     bool free() const { return *_next_cell <= FREE; }
     bool used() const { return *_next_cell > FREE; }
 
-    // get cell/block data from address
-    int cell() const { return *_next_cell; }
+    // get next cell/block
+    int next_cell() const { return *_next_cell; }
 
     // set cell/block from address
     void set_free() { *_next_cell = FREE; }
     void set_next_cell(int c) { *_next_cell = c; }
 
     friend bool operator==(const FatCell& lhs, const FatCell& rhs) {
-        return lhs.cell() == rhs.cell();
+        return lhs.next_cell() == rhs.next_cell();
     }
 
     friend bool operator!=(const FatCell& lhs, const FatCell& rhs) {
-        return lhs.cell() != rhs.cell();
+        return lhs.next_cell() != rhs.next_cell();
     }
 
     friend bool operator<(const FatCell& lhs, const FatCell& rhs) {
-        return lhs.cell() < rhs.cell();
-    }
-
-    friend bool operator<=(const FatCell& lhs, const FatCell& rhs) {
-        return lhs.cell() <= rhs.cell();
-    }
-
-    friend bool operator>(const FatCell& lhs, const FatCell& rhs) {
-        return lhs.cell() > rhs.cell();
-    }
-
-    friend bool operator>=(const FatCell& lhs, const FatCell& rhs) {
-        return lhs.cell() >= rhs.cell();
+        return lhs.next_cell() < rhs.next_cell();
     }
 };
 
@@ -470,19 +458,19 @@ public:
 
     // read file data into data buffer of size
     // returns successful bytes read
-    std::size_t read_file_data(FileEntry& file_entry, char* data,
+    std::size_t read_file_data(FileEntry& file, char* data,
                                std::size_t size) const;
 
     // overwrite data buffer to file entry
-    std::size_t write_file_data(FileEntry& file_entry, const char* data,
+    std::size_t write_file_data(FileEntry& file, const char* data,
                                 std::size_t size);
 
     // append data buffer to file entry
-    std::size_t append_file_data(FileEntry& file_entry, const char* data,
+    std::size_t append_file_data(FileEntry& file, const char* data,
                                  std::size_t size);
 
     // remove all data blocks for this file entry
-    void remove_file_data(FileEntry& file_entry);
+    void remove_file_data(FileEntry& file);
 
 private:
     std::string _name;  // name of filesystem
@@ -498,45 +486,45 @@ private:
     void _init_root();
 
     // add dir or file at given directory
-    DirEntry _add_dir_at(DirEntry& target, std::string name);
-    FileEntry _add_file_at(DirEntry& target, std::string name);
+    DirEntry _add_dir_at(DirEntry& dir, std::string name);
+    FileEntry _add_file_at(DirEntry& dir, std::string name);
 
     // get a set of all entry at given directory entry by comparison function
-    void _entries_at(DirEntry& dir_entry, EntrySet& entries_set) const;
-    void _dirs_at(DirEntry& dir_entry, DirSet& entries_set) const;
-    void _files_at(DirEntry& dir_entry, FileSet& entries_set) const;
+    void _entries_at(DirEntry& dir, EntrySet& entries_set) const;
+    void _dirs_at(DirEntry& dir, DirSet& entries_set) const;
+    void _files_at(DirEntry& dir, FileSet& entries_set) const;
 
     // find an entry by name at given directory or return invalid entry
-    DirEntry _find_dir_at(DirEntry& dir_entry, std::string name) const;
-    FileEntry _find_file_at(DirEntry& dir_entry, std::string name) const;
+    DirEntry _find_dir_at(DirEntry& dir, std::string name) const;
+    FileEntry _find_file_at(DirEntry& dir, std::string name) const;
 
     // find an entry by name at given directory or return last entry
-    DirEntry _find_dir_orlast_at(DirEntry& dir_entry, std::string name) const;
-    FileEntry _find_file_orlast_at(DirEntry& dir_entry, std::string name) const;
+    DirEntry _find_dir_orlast_at(DirEntry& dir, std::string name) const;
+    FileEntry _find_file_orlast_at(DirEntry& dir, std::string name) const;
 
     // delete directory of a specificed name
-    bool _delete_dir_at_dir(DirEntry& dir_entry, std::string name);
-    bool _delete_file_at_dir(DirEntry& dir_entry, std::string name);
+    bool _delete_dir_at(DirEntry& dir, std::string name);
+    bool _delete_file_at(DirEntry& dir, std::string name);
 
     // recursively delete subdirectories and files within this dir entry
-    // does not delete dir_entry itself
-    void _free_dir_contents(DirEntry& dir_entry);
+    // does not delete dir itself
+    void _free_dir_at(DirEntry& dir);
 
     // free all data blocks in file entry
-    void _free_file_data_blocks(FileEntry& file_entry);
+    void _free_data_at(FileEntry& file);
 
     // mark given FatCell as free and push to free list
     void _free_cell(FatCell& cell, int cell_index);
 
     // update all parents size, up to root directory
-    void _update_parents_size(DirEntry dir_entry, std::size_t size);
+    void _update_parents_size(DirEntry dir, std::size_t size);
 
     // get last cell from entry
-    FatCell _last_dircell_from_dir(DirEntry& dir_entry) const;
-    FatCell _last_filecell_from_dir(DirEntry& dir_entry) const;
-    FatCell _last_datacell_from_file(FileEntry& file_entry) const;
-    FatCell _last_cell_from_cell(int cell_offset) const;
-    FatCell _sec_last_cell_from_cell(int cell_offset) const;
+    FatCell _last_dircell_from(DirEntry& dir) const;
+    FatCell _last_filecell_from(DirEntry& dir) const;
+    FatCell _last_datacell_from(FileEntry& file) const;
+    FatCell _last_cell_from(int cell_offset) const;
+    FatCell _sec_last_cell_from(int cell_offset) const;
 
     // tokenize a path string and return a list of name entries
     void _tokenize_path(std::string path,
