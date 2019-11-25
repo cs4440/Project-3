@@ -120,6 +120,8 @@ bool Disk::remove() {
 
 bool Disk::valid() const { return _pfile != nullptr; }
 
+Disk::operator bool() const { return _pfile != nullptr; }
+
 std::size_t Disk::cylinder() const { return _cylinders; }
 
 std::size_t Disk::sector() const { return _sectors; }
@@ -159,7 +161,7 @@ int Disk::fd() const { return _fd; }
 
 char *Disk::file() const { return _file; }
 
-char *Disk::file_at(int block) const {
+char *Disk::data_at(int block) const {
     if(block > -1 && block < int(_cylinders * _sectors))
         return _file + (block * _max_block);
     else

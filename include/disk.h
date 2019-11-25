@@ -36,6 +36,7 @@ public:
     bool open(std::string n);  // initialize Disk from existing file
     bool remove();             // remove disk file from system
     bool valid() const;        // check if disk is valid
+    operator bool() const;
 
     std::size_t cylinder() const;
     std::size_t sector() const;
@@ -50,9 +51,10 @@ public:
     std::size_t location(std::size_t cyl, std::size_t sec) const;
     std::size_t location(std::size_t block) const;
     std::string geometry() const;  // return a string with disk geometry
-    int fd() const;
-    char* file() const;
-    char* file_at(int block) const;
+
+    int fd() const;                  // return internal file descriptor
+    char* file() const;              // return original file ptr
+    char* data_at(int block) const;  // return pointer at specified block
 
     void set_cylinders(std::size_t c);   // set cylinders if valid
     void set_sectors(std::size_t s);     // set sectors per cylinder if valid

@@ -33,13 +33,14 @@ namespace fs {
  * type: Entry:DIR
  * dot: Entry::ENDBLOCK, self pointer
  * dotdot: Entry:ENDBLOCK, parent pointer
+ * size: 0
  * created: current time
  * last_accessed: current time
  * last_modified: current time
  ******************************************************************************/
 class Entry {
 public:
-    enum { DIR = 0, FILE = 1, ENDBLOCK = -1, MAX_NAME = 79 };
+    enum { ENDBLOCK = -1, DIR = 0, FILE = 1, MAX_NAME = 79 };
 
     // ENTRY COMPARATORS
     // compare entry by type and then by name
@@ -47,67 +48,52 @@ public:
     // compare entry just by name
     static bool cmp_entry_name(const Entry& a, const Entry& b);
 
-    Entry(char* address = nullptr) { _reset_address(address); }
+    Entry(char* address = nullptr);
 
-    bool has_parent() const { return dotdot() != Entry::ENDBLOCK; }
-    bool valid() const { return _name != nullptr; }
-    operator bool() const { return _name != nullptr; }  // explicit bool conv
+    bool has_parent() const;
+    bool valid() const;
+    operator bool() const;
 
-    std::string name() const { return std::string(_name); }
-    bool type() const { return *_type; }
-    int dot() const { return *_dot; }
-    int dotdot() const { return *_dotdot; }
-    int size() const { return *_size; }
-    time_t created() const { return *_created; }
-    time_t* created_ptr() const { return _created; }
-    char* created_str() const { return std::ctime(_created); }
-    time_t last_accessed() const { return *_last_accessed; }
-    time_t* last_accessed_ptr() const { return _created; }
-    char* last_accessed_str() const { return std::ctime(_last_accessed); }
-    time_t last_modified() const { return *_last_modified; }
-    time_t* last_modified_ptr() const { return _created; }
-    char* last_modified_str() const { return std::ctime(_last_modified); }
+    std::string name() const;
+    bool type() const;
+    int dot() const;
+    int dotdot() const;
+    int size() const;
+    time_t created() const;
+    time_t* created_ptr() const;
+    char* created_str() const;
+    time_t last_accessed() const;
+    time_t* last_accessed_ptr() const;
+    char* last_accessed_str() const;
+    time_t last_modified() const;
+    time_t* last_modified_ptr() const;
+    char* last_modified_str() const;
 
     // Clear and initialize all fields to default values
     // Must init when adding a new and fresh Entry!
     // WARNING: will delete existing data!
-    void init() {
-        memset(_name, 0, Entry::MAX_NAME);
-        set_type(Entry::DIR);
-        set_dot(Entry::ENDBLOCK);
-        set_dotdot(Entry::ENDBLOCK);
-        set_size(0);
-        update_created();
-        update_last_accessed();
-        update_last_modified();
-    }
+    void init();
 
     // clear the entry with invalid state
-    void clear() { _reset_address(nullptr); };
+    void clear();
 
     // set address if DirEntry was not created with valid address
-    void set_address(char* address) { _reset_address(address); }
+    void set_address(char* address);
 
-    void set_name(std::string name) {
-        if(name.size() > Entry::MAX_NAME)
-            throw std::range_error("File name size exceeded");
+    void set_name(std::string name);
 
-        memset(_name, 0, Entry::MAX_NAME);
-        strncpy(_name, name.c_str(), name.size());
-    }
-
-    void set_type(bool type) { *_type = type; }
-    void set_dot(int block) { *_dot = block; }
-    void set_dotdot(int block) { *_dotdot = block; }
-    void set_size(int size) { *_size = size; }
-    void inc_size(int inc) { *_size += inc; }
-    void dec_size(int dec) { *_size -= dec; }
-    void set_created(time_t t) { *_created = t; }
-    void update_created() { *_created = std::time(_created); }
-    void set_last_accessed(time_t t) { *_last_accessed = t; }
-    void update_last_accessed() { *_last_accessed = std::time(_last_accessed); }
-    void set_last_modified(time_t t) { *_last_modified = t; }
-    void update_last_modified() { *_last_modified = std::time(_last_modified); }
+    void set_type(bool type);
+    void set_dot(int block);
+    void set_dotdot(int block);
+    void set_size(int size);
+    void inc_size(int inc);
+    void dec_size(int dec);
+    void set_created(time_t t);
+    void update_created();
+    void set_last_accessed(time_t t);
+    void update_last_accessed();
+    void set_last_modified(time_t t);
+    void update_last_modified();
 
     friend bool operator<(const Entry& lhs, const Entry& rhs) {
         return lhs.name() < rhs.name();
@@ -123,16 +109,7 @@ protected:
     time_t* _last_accessed;
     time_t* _last_modified;
 
-    void _reset_address(char* address) {
-        _name = address;
-        _type = (bool*)(_name + Entry::MAX_NAME);
-        _dot = (int*)(_type + 1);
-        _dotdot = _dot + 1;
-        _size = _dotdot + 1;
-        _created = (time_t*)(_size + 1);
-        _last_accessed = _created + 1;
-        _last_modified = _last_accessed + 1;
-    }
+    void _reset_address(char* address);
 };
 
 /*******************************************************************************
@@ -150,47 +127,36 @@ protected:
  ******************************************************************************/
 class DirEntry : public Entry {
 public:
-    DirEntry(char* address = nullptr) : Entry(address) { _init_dir(); }
+    DirEntry(char* address = nullptr);
 
-    bool has_dirs() const { return dir_head() > Entry::ENDBLOCK; }
-    bool has_files() const { return file_head() > Entry::ENDBLOCK; }
-    int dir_head() const { return *_dir_head; }
-    int file_head() const { return *_file_head; }
+    bool has_dirs() const;
+    bool has_files() const;
+    int dir_head() const;
+    int file_head() const;
 
     // Clear and initialize all fields to default values
     // Must init when adding a new and fresh Entry!
     // WARNING: will delete existing data!
-    void init() {
-        Entry::init();
-        set_type(Entry::DIR);
-        set_dir_head(Entry::ENDBLOCK);
-        set_file_head(Entry::ENDBLOCK);
-    }
+    void init();
 
     // clear the entry with invalid state
-    void clear() { DirEntry::_reset_address(nullptr); };
+    void clear();
 
     // set address if DirEntry was not created with valid address
-    void set_address(char* address) { DirEntry::_reset_address(address); }
+    void set_address(char* address);
 
-    void set_dir_head(int cell) { *_dir_head = cell; }
-    void set_file_head(int cell) { *_file_head = cell; }
+    void set_dir_head(int cell);
+    void set_file_head(int cell);
 
 protected:
     int* _dir_head;   // dir entry head ptr
     int* _file_head;  // file entry head ptr
 
     // set address offsets from Entry's last adddress
-    void _init_dir() {
-        _dir_head = (int*)(_last_modified + 1);
-        _file_head = _dir_head + 1;
-    }
+    void _init_dir();
 
     // reset all attribute addresses
-    void _reset_address(char* address) {
-        Entry::_reset_address(address);
-        _init_dir();
-    }
+    void _reset_address(char* address);
 };
 
 /*******************************************************************************
@@ -208,48 +174,37 @@ protected:
  ******************************************************************************/
 class FileEntry : public Entry {
 public:
-    FileEntry(char* address = nullptr) : Entry(address) { _init_file(); }
+    FileEntry(char* address = nullptr);
 
-    bool has_data() const { return data_head() > Entry::ENDBLOCK; }
-    int data_head() const { return *_data_head; }
-    int data_size() const { return *_data_size; }
+    bool has_data() const;
+    int data_head() const;
+    int data_size() const;
 
     // Clear and initialize all fields to default values
     // Must init when adding a new and fresh Entry!
     // WARNING: will delete existing data!
-    void init() {
-        Entry::init();
-        set_type(Entry::FILE);
-        set_data_head(Entry::ENDBLOCK);
-        set_data_size(0);
-    }
+    void init();
 
     // clear the entry with invalid state
-    void clear() { FileEntry::_reset_address(nullptr); };
+    void clear();
 
     // set address if FileEntry was not created with valid address
-    void set_address(char* address) { FileEntry::_reset_address(address); }
+    void set_address(char* address);
 
-    void set_data_head(int cell) { *_data_head = cell; }
-    void set_data_size(int size) { *_data_size = size; }
-    void inc_data_size(int size) { *_data_size += size; }
-    void dec_data_size(int size) { *_data_size -= size; }
+    void set_data_head(int cell);
+    void set_data_size(int size);
+    void inc_data_size(int size);
+    void dec_data_size(int size);
 
 protected:
     int* _data_head;  // data block head ptr
     int* _data_size;  // size of data (stops at nul byte)
 
     // set address offsets from Entry's last adddress
-    void _init_file() {
-        _data_head = (int*)(_last_modified + 1);
-        _data_size = _data_head + 1;
-    }
+    void _init_file();
 
     // reset all attribute addresses
-    void _reset_address(char* address) {
-        Entry::_reset_address(address);
-        _init_file();
-    }
+    void _reset_address(char* address);
 };
 
 /*******************************************************************************
@@ -263,13 +218,13 @@ protected:
  ******************************************************************************/
 class DataEntry {
 public:
-    DataEntry(char* address = nullptr) : _data(address) {}
+    DataEntry(char* address = nullptr);
 
-    bool valid() const { return _data != nullptr; }
-    operator bool() const { return _data != nullptr; }  // explicit bool conv
+    bool valid() const;
+    operator bool() const;
 
-    char* data() { return _data; }
-    void clear(std::size_t size) { memset(_data, 0, size); }
+    char* data();
+    void clear(std::size_t size);
 
     // read data up to Disk::MAX_BLOCK and return successful bytes read
     std::size_t read(char* buf, std::size_t size, std::size_t limit);
@@ -315,21 +270,20 @@ struct FatCell {
     int* _next_cell;
 
     // CONSTRUCTOR
-    FatCell(char* address = nullptr) : _next_cell((int*)(address)) {}
+    FatCell(char* address = nullptr);
 
-    bool valid() const { return _next_cell != nullptr; }
-    operator bool() const { return _next_cell != nullptr; }
-
-    bool has_next() const { return _next_cell != nullptr && *_next_cell > END; }
-    bool free() const { return *_next_cell <= FREE; }
-    bool used() const { return *_next_cell > FREE; }
+    bool has_next() const;
+    bool free() const;
+    bool used() const;
+    bool valid() const;
+    operator bool() const;
 
     // get next cell/block
-    int next_cell() const { return *_next_cell; }
+    int next_cell() const;
 
     // set cell/block from address
-    void set_free() { *_next_cell = FREE; }
-    void set_next_cell(int c) { *_next_cell = c; }
+    void set_free();
+    void set_next_cell(int c);
 
     friend bool operator==(const FatCell& lhs, const FatCell& rhs) {
         return lhs.next_cell() == rhs.next_cell();
