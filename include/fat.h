@@ -22,13 +22,14 @@
 namespace fs {
 
 /*******************************************************************************
- * Entry is the base class to hold metadata in a disk.
+ * Entry is the base class to hold metadata in a disk, a direct modification of
+ * a disk block. A new Entry must be followed by init() to set default values.
  *
  * Structure of Entry
  * |      name     | valid | type | dot | dotdot | timestamps...
  *  char* MAX_NAME   bool    bool   int    int       time_t
  *
- * Default values when constructed with valid address:
+ * Default values when init() with valid address:
  * name: null bytes
  * type: Entry:DIR
  * dot: Entry::ENDBLOCK, self pointer
@@ -77,11 +78,9 @@ public:
     // clear the entry with invalid state
     void clear();
 
-    // set address if DirEntry was not created with valid address
+    // set address if entry was not created with valid address
     void set_address(char* address);
-
     void set_name(std::string name);
-
     void set_type(bool type);
     void set_dot(int block);
     void set_dotdot(int block);
@@ -113,8 +112,10 @@ protected:
 };
 
 /*******************************************************************************
- * DirEntry is an extension of the Entry class for a directory.
- * It add these attributes: dir_head and file_head, which are linked list head
+ * DirEntry is an extension of the Entry class for a directory. A new Entry
+ * must be followed by init() to set default values.
+ *
+ * Additional attributes: dir_head and file_head, which are linked list head
  * ptr to directory/file entry block in disk.
  *
  * Structure of Entry
@@ -160,8 +161,10 @@ protected:
 };
 
 /*******************************************************************************
- * FileEntry is an extension of the Entry class for a file.
- * It add these attributes: data_head (linked list ptr to start of data blocks)
+ * FileEntry is an extension of the Entry class for a file. A new Entry
+ * must be followed by init() to set default values.
+ *
+ * Additional attributes: data_head (linked list ptr to start of data blocks)
  * and data_size (the size of all data, not rounded up to data blocks).
  *
  * Structure of Entry
@@ -208,7 +211,8 @@ protected:
 };
 
 /*******************************************************************************
- * DataEntry represent a data block in disk of size Disk::MAX_BLOCK
+ * DataEntry represent a raw data block in disk of size limit, the maximum size
+ * of a disk block.
  *
  * Structure of Entry
  * |          data          |
