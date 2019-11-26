@@ -87,11 +87,10 @@ void Client::set_host(std::string host) { _host = host; }
 
 // send msg to socket
 void send_msg(int sockfd, const std::string &msg) {
-    ssize_t bytes = -1;
+    ssize_t bytes = -1, msg_size = msg.size();
 
     try {
         // send size to indicate the actual message size it will send
-        std::size_t msg_size = msg.size();
         bytes = send(sockfd, (char *)&msg_size, sizeof(msg_size), MSG_NOSIGNAL);
         throw_socket_io(bytes);
 
@@ -105,7 +104,7 @@ void send_msg(int sockfd, const std::string &msg) {
     }
 }
 
-void send_msg(int sockfd, char *msg, std::size_t sz) {
+void send_msg(int sockfd, char *msg, ssize_t sz) {
     ssize_t bytes = -1;
 
     try {
@@ -126,8 +125,7 @@ void send_msg(int sockfd, char *msg, std::size_t sz) {
 // read from socket and return by ref to msg
 void recv_msg(int sockfd, std::string &msg) {
     char buf[BUFLEN] = {0};
-    std::size_t msg_size = 0, totalbytes = 0;
-    ssize_t bytes = -1;
+    ssize_t bytes = -1, totalbytes = 0, msg_size = 0;
     msg.clear();
 
     try {

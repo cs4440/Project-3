@@ -69,7 +69,7 @@ private:
 
 // send to socket, blocking mode, throws on error
 void send_msg(int sockfd, const std::string &msg);
-void send_msg(int sockfd, char *msg, std::size_t sz);
+void send_msg(int sockfd, char *msg, ssize_t sz);
 
 // receive from socket, blocking mode, throws on error
 void recv_msg(int sockfd, std::string &msg);
