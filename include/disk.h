@@ -28,7 +28,7 @@ public:
         TRACK_TIME = 100  // microseconds
     };
 
-    Disk(std::string name, std::size_t cyl = 1, std::size_t sec = 32);
+    Disk(std::string name, int cyl = 1, int sec = 32);
     ~Disk();
 
     // DISK INITIALIZATIONS !!!
@@ -56,9 +56,9 @@ public:
     char* file() const;              // return original file ptr
     char* data_at(int block) const;  // return pointer at specified block
 
-    void set_cylinders(std::size_t c);   // set cylinders if valid
-    void set_sectors(std::size_t s);     // set sectors per cylinder if valid
-    void set_block_size(std::size_t s);  // set sector size if valid
+    void set_cylinders(int c);           // set cylinders if valid
+    void set_sectors(int s);             // set sectors per cylinder if valid
+    void set_block_size(int b);          // set sector size if valid
     void set_track_time(std::size_t t);  // set sector size if valid
     bool set_name(std::string n);        // set disk name when not valid
 

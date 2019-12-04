@@ -237,17 +237,23 @@ void mkfs(int sockfd, std::vector<std::string> &tokens, fs::Disk &disk,
     else if(fatfs.valid())
         sock::send_msg(sockfd, "ERROR Filesystem exists.");
     else {
-        int cylinders = std::stoi(tokens[1]);
-        int sectors = std::stoi(tokens[2]);
+        try {
+            int cylinders = std::stoi(tokens[1]);
+            int sectors = std::stoi(tokens[2]);
 
-        disk.set_cylinders(cylinders);
-        disk.set_sectors(sectors);
-        disk.create();
+            disk.set_cylinders(cylinders);
+            disk.set_sectors(sectors);
+            disk.create();
 
-        fatfs.set_disk(&disk);
-        fatfs.format();
+            fatfs.set_disk(&disk);
+            fatfs.format();
 
-        sock::send_msg(sockfd, fatfs.info());
+            sock::send_msg(sockfd, fatfs.info());
+        } catch(const std::exception &e) {
+            disk.remove();
+            fatfs.remove();
+            sock::send_msg(sockfd, "1 " + std::string(e.what()));
+        }
     }
 }
 

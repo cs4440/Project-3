@@ -409,6 +409,9 @@ bool FatFS::open_disk() {
 
 bool FatFS::format() {
     if(_disk && _disk->valid()) {
+        if(_disk->total_blocks() < 2)
+            throw std::length_error("Not enough disk blocks");
+
         // calculate bytes of of FAT table
         int initial_fat_sz = _disk->total_blocks() * FatCell::SIZE;
 

@@ -2,7 +2,7 @@
 
 namespace fs {
 
-Disk::Disk(std::string name, std::size_t cyl, std::size_t sec)
+Disk::Disk(std::string name, int cyl, int sec)
     : _cylinders(cyl),
       _sectors(sec),
       _max_block(MAX_BLOCK),
@@ -14,7 +14,10 @@ Disk::Disk(std::string name, std::size_t cyl, std::size_t sec)
       _disk_name(name + ".disk"),
       _fd(-1),
       _file(nullptr),
-      _pfile(nullptr) {}
+      _pfile(nullptr) {
+    if(cyl < 1 || sec < 1)
+        throw std::out_of_range("ERROR Invalid cylinder or sector");
+}
 
 Disk::~Disk() {
     _unmap_file();  // unmap virtual memory from file
@@ -168,16 +171,19 @@ char *Disk::data_at(int block) const {
         return nullptr;
 }
 
-void Disk::set_cylinders(std::size_t c) {
+void Disk::set_cylinders(int c) {
+    if(c < 1) throw std::out_of_range("ERROR Invalid cylinder");
     if(!valid()) _cylinders = c;
 }
 
-void Disk::set_sectors(std::size_t s) {
+void Disk::set_sectors(int s) {
+    if(s < 1) throw std::out_of_range("ERROR Invalid sector");
     if(!valid()) _sectors = s;
 }
 
-void Disk::set_block_size(std::size_t s) {
-    if(!valid()) _max_block = s;
+void Disk::set_block_size(int b) {
+    if(b < 1) throw std::out_of_range("ERROR Invalid block size");
+    if(!valid()) _max_block = b;
 }
 
 bool Disk::set_name(std::string n) {

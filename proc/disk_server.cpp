@@ -144,6 +144,7 @@ void *connection_handler(void *socketfd) {
                                 sock::send_msg(sockfd, "ERROR Disk exists.");
                             }
                         } catch(const std::exception &e) {
+                            disk.remove();
                             sock::send_msg(sockfd, e.what());
                         }
                     }
