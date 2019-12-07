@@ -1,0 +1,324 @@
+Project members
+---------------
+- Adrian Palomares
+- Daniel Gomez
+- Thuan Tang
+
+
+------------------
+Programs submitted
+------------------
+proc/basic_client.cpp - Basic client-server
+proc/basic_server.cpp - Basic client-server
+proc/dir_listing_client.cpp - Directory listing server
+proc/dir_listing_server.cpp - Directory listing server
+proc/disk_client.cpp - Basic disk-storage program
+proc/disk_client_rand.cpp - Basic disk-storage program, random test
+proc/dis_server.cpp - Basic disk-storage program
+proc/fs_basc_client.cpp - File system server
+proc/fs_basic_server.cpp - File system server
+proc/fs_full_client.cpp - Directory structure file system
+proc/fs_full_client.cpp - Directory structure file system
+
+
+----------------
+Test runs output
+----------------
+
+
+Basic client-server output
+--------------------------
+./basic_client
+String sent: Hello world
+String recieved: dlrow olleH
+
+
+Directory listing server output
+-------------------------------
+./dir_listing_client
+Enter arguments for ls command:
+ls -l
+total 6261
+-rwxrwxrwx 1 root root  19072 Dec  7 08:55 basic_client
+-rwxrwxrwx 1 root root  13728 Dec  7 08:55 basic_client.o
+-rwxrwxrwx 1 root root  20000 Dec  7 08:55 basic_server
+-rwxrwxrwx 1 root root  15720 Dec  7 08:55 basic_server.o
+-rwxrwxrwx 1 root root  19232 Dec  7 08:55 dir_listing_client
+-rwxrwxrwx 1 root root  13952 Dec  7 08:55 dir_listing_client.o
+-rwxrwxrwx 1 root root  19688 Dec  7 08:55 dir_listing_server
+-rwxrwxrwx 1 root root  15112 Dec  7 08:55 dir_listing_server.o
+-rwxrwxrwx 1 root root 120744 Dec  7 08:55 disk_client
+-rwxrwxrwx 1 root root 100080 Dec  7 08:55 disk_client.o
+-rwxrwxrwx 1 root root 134848 Dec  7 08:55 disk_client_rand
+-rwxrwxrwx 1 root root 130232 Dec  7 08:55 disk_client_rand.o
+-rwxrwxrwx 1 root root 126104 Dec  7 08:55 disk.o
+-rwxrwxrwx 1 root root 449912 Dec  7 08:55 disk_server
+-rwxrwxrwx 1 root root 282808 Dec  7 08:55 disk_server.o
+-rwxrwxrwx 1 root root 961944 Dec  7 08:55 fat.o
+-rwxrwxrwx 1 root root 120760 Dec  7 08:55 fs_basic_client
+-rwxrwxrwx 1 root root 100096 Dec  7 08:55 fs_basic_client.o
+-rwxrwxrwx 1 root root 938752 Dec  7 08:55 fs_basic_server
+-rwxrwxrwx 1 root root 341824 Dec  7 08:55 fs_basic_server.o
+-rwxrwxrwx 1 root root 122016 Dec  7 08:55 fs_full_client
+-rwxrwxrwx 1 root root 103704 Dec  7 08:55 fs_full_client.o
+-rwxrwxrwx 1 root root 952768 Dec  7 08:55 fs_full_server
+-rwxrwxrwx 1 root root 365736 Dec  7 08:55 fs_full_server.o
+drwxrwxrwx 1 root root   4096 Dec  4 11:54 include
+-rwxrwxrwx 1 root root   3689 Dec  4 15:42 Makefile
+-rwxrwxrwx 1 root root 238528 Dec  7 08:55 parser.o
+-rwxrwxrwx 1 root root    902 Dec  7 09:01 Prj3README
+drwxrwxrwx 1 root root   4096 Dec  4 11:54 proc
+-rwxrwxrwx 1 root root 139851 Nov  4 13:42 Project_3.pdf
+-rwxrwxrwx 1 root root    240 Nov  6 15:43 README.md
+-rwxrwxrwx 1 root root 121776 Dec  7 08:55 socket.o
+drwxrwxrwx 1 root root   4096 Dec  4 11:54 src
+-rwxrwxrwx 1 root root 130512 Dec  7 08:55 state_machine.o
+drwxrwxrwx 1 root root      0 Nov 20 17:11 tests
+-rwxrwxrwx 1 root root 109408 Dec  7 08:55 tokenizer.o
+-rwxrwxrwx 1 root root 109392 Dec  7 08:55 token.o
+
+
+Basic disk-storage program output
+---------------------------------
+./disk_client
+Client connected to server localhost:8000
+WELCOME TO DISK SERVER
+
+Available commands are:
+[C]reate - Create/initialize disk. 'C [CYL] [SEC]'
+[D]elete - Delete current disk
+[I]nfo - Get disk geometry information
+[R]ead - Read from disk. 'R [CYL] [SEC]'
+[W]rite - Write to disk. 'W [CYL] [SEC] [DATA]'
+
+Please initialize disk with CREATE command: 'C [CYL] [SEC]'
+> C 5 5
+5 5
+> I
+5 5
+> R 0 0
+1
+> R 0 1
+1
+> W 0 0 Hello
+1
+> W 0 1 World   
+1
+> R 0 0
+1Hello
+> R 0 1
+1World
+> exit
+Closing client
+
+
+Basic disk-storage program random output
+----------------------------------------
+./disk_client_rand
+Client connected to server localhost:8000
+Enter N requests and random seed number:
+[N] [S]: 10 0
+
+WELCOME TO DISK SERVER
+
+Available commands are:
+[C]reate - Create/initialize disk. 'C [CYL] [SEC]'
+[D]elete - Delete current disk
+[I]nfo - Get disk geometry information
+[R]ead - Read from disk. 'R [CYL] [SEC]'
+[W]rite - Write to disk. 'W [CYL] [SEC] [DATA]'
+
+Disk exists in system. Using existing disk
+
+I
+2 16
+W
+R
+R
+W
+R
+R
+W
+R
+W
+W
+
+./disk_server
+Server started on port 8000
+Serving client
+welcome
+I
+W 1 15 "nLYu;n[I_oerSW2@dGn<u[gQ6ozt;NLyR][\PntgaF]lVH{r^W2A6iaoE_PO1lL<6_g>QI^j^?[l?CcVRdfW:4KNbjmKCqV2Uv?^wlMBd`3[[ei26<A@?D]Yg7tyx7c:"
+R 1 9
+R 0 5
+W 1 12 "]{MFQN4]^CkrYIFHuwxd_6N>?fAc\JlqIqoiCs3Y:n8KoMcQI_9wNVm\ufCU4gK5\>WWiY5\4pv[BF{C^9r{GcD@6?NnvQ[?GjO5H<`4{C_uYG<;O2nOM6^<Ddyr9Aj9"
+R 0 8
+R 1 12
+W 0 4 "Juxai7hk];pbi{_:a>CrwKZl@Yld[U8^75CoozG::<T[o7d>y_h]bFNqnrB643c:k^bG]xPOlty`cJm`bYBHWHrIrl7vnjh]5N]aK1h;tNS\hxtN>nNd:Deeil_[C4qG"
+R 0 4
+W 1 8 "H4kkH@gtFugcFp`{YMkp`ftU13_JWjgnm?FmNfecHP3]yb\?344ci`pSKTlqB@LgNbXT5u;LJ>x{XB>[EuvgYjrsvKQ<[m[a<7:@1x[3:@2bQ?uO9onJFdvA345FY`wd"
+W 1 12 "8eonXhor=gTDX{6ZER=>>AwSi[7;boOSBCERz9HoXk84jqFg1Su>cpI98PCRwbtq]>GDzG7VjrBAQ@xQbZG27_org6HcPAAe7Xx5WhCF^=VgL;<gdRQSjDIU3J<;C6pI"
+Client error. Disonnected
+
+
+File system server output
+-------------------------
+./fs_basic_client
+Client connected to server localhost:8000
+WELCOME TO BASIC FILESYSTEM SERVER
+
+FILE SYSTEM COMMANDS:
+---------------------
+[F]ormat filesystem of disk size [CYLINDER] [SECTOR]: 'F [C] [S]'
+[C]reate file: 'C [NAME]'
+[D]elete file: 'D [NAME]'
+[L]ist current dirs/files, flag=0 minimal, flag=1 full: 'L [FLAG]'
+[R]ead a file: 'R [NAME]'
+[W]rite data to file: 'W [NAME] [DATA]'
+[I]nformation of file system: name, valid, size (in bytes), etc
+[U]nformat a filesystem and deletes disk
+
+Please format filesystem with 'F' command
+> F 5 5
+Disk name: client-fs-basic
+Valid: 1
+Logical disk size: 3072
+Free space (bytes): 2944
+Used space (bytes): 128
+> C file1
+0 Created
+> C file2
+0 Created
+> R file1
+0 0 
+> R file2
+0 0 
+> W file1 "Hello World"
+0
+> R file1
+0 11 Hello World
+> W file2 "End of the World"
+0
+> R file2
+0 16 End of the World
+> Info
+Unknown command
+> I
+Disk name: client-fs-basic
+Valid: 1
+Logical disk size: 3072
+Free space (bytes): 2432
+Used space (bytes): 640
+> L
+file1
+file2
+> U
+File system and disk removed
+> I
+Disk name: 
+Valid: 0
+Logical disk size: 0
+Free space (bytes): 0
+Used space (bytes): 0
+> exit
+Closing client
+
+
+Directory structure file system output
+--------------------------------------
+./fs_full_client
+Client connected to server localhost:8000
+WELCOME TO FILESYSTEM SERVER
+
+FILE SYSTEM COMMANDS:
+---------------------
+mkfs [CYLINDER] [SECTOR]        Create filesystem size of cylinder x sector
+rmfs                            Remove filesystem
+mkdir [NAME]                    Create a directory entry
+rmdir [NAME]                    Remove a directory
+mk [NAME]                       Create a file entry
+rm [NAME]                       Remove a file
+read [NAME]                     Read file data
+write [NAME] [DATA]             Write data to file
+append [NAME] [DATA]            Append data to file
+cd [PATH]                       Change directory to PATH
+ls                              List path contents
+pwd                             List path contents
+info                            Display current filesystem information
+
+Please create and format filesystem with 'mkfs' command
+> mkfs 10 10
+Disk name: client-fs-full
+Valid: 1
+Logical disk size: 12288
+Free space (bytes): 12160
+Used space (bytes): 128
+> ls
+> mk file1
+0 Created
+> mk file2
+0 Created
+> mkdir dir1
+0 Created
+> mkdir dir2
+0 Created
+> ls 
+dir1
+dir2
+file1
+file2
+> ls -l
+dir1  128 Dec 07 09:15
+dir2  128 Dec 07 09:15
+file1 128 Dec 07 09:15
+file2 128 Dec 07 09:15
+> write file1 "Hello World"
+0
+> write file2 "End of World"
+0
+> read file1
+0 11 Hello World
+> read file2
+0 12 End of World
+> pwd
+/
+> cd dir1
+> pwd
+/dir1
+> mk file3
+0 Created
+> mk file4
+0 Created
+> mkdir dir3
+0 Created
+> ls -l
+dir3  128 Dec 07 09:16
+file3 128 Dec 07 09:16
+file4 128 Dec 07 09:16
+> write file 3 "Another file"
+1 No file exists
+> write file3 "Another file"
+0
+> read file3
+0 12 Another file
+> pwd
+/dir1
+> cd ..
+> pwd
+/
+> cd dir1/dir3
+> pwd
+/dir1/dir3
+> cd /
+> pwd
+/
+> info
+Disk name: client-fs-full
+Valid: 1
+Logical disk size: 12288
+Free space (bytes): 10880
+Used space (bytes): 1408
+> rmfs
+File system and disk removed
+> exit
+Closing client
