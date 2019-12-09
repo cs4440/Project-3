@@ -86,6 +86,9 @@ int main(int argc, char* argv[]) {
             }
         }
 
+        sock::send_msg(sockfd, std::string("exit"));
+        sock::recv_msg(sockfd, server_msg);
+
     } catch(const std::exception& e) {
         std::cerr << "Server error on " << host << ":" << port << ". "
                   << e.what() << std::endl;
