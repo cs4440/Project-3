@@ -5,9 +5,10 @@
 #include <netinet/in.h>  // struct sockaddr_in
 #include <sys/socket.h>  // socket()
 #include <unistd.h>      // close()
-#include <cstring>       // memset
-#include <stdexcept>     // std::exception
-#include <string>        // std::string
+
+#include <cstring>    // memset
+#include <stdexcept>  // std::exception
+#include <string>     // std::string
 
 namespace sock {
 
@@ -28,7 +29,7 @@ public:
     void set_port(int port);  // set port
 
 protected:
-    struct sockaddr_in _serv_addr;
+    struct sockaddr_in _sock_addr;
     int _sockfd;
     int _port;
 };
@@ -43,6 +44,7 @@ public:
     void start();
     void stop();
     int accept_connection();  // return new sockfd for incoming connection
+    struct sockaddr_in client_addr();
 
 private:
     struct sockaddr_in _cli_addr;

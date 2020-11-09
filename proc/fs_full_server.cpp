@@ -1,7 +1,9 @@
-#include <pthread.h>            // POSIX threads
-#include <unistd.h>             // getopt()
-#include <iostream>             // std::stream
-#include <sstream>              // ostringstream
+#include <pthread.h>  // POSIX threads
+#include <unistd.h>   // getopt()
+
+#include <iostream>  // std::stream
+#include <sstream>   // ostringstream
+
 #include "../include/disk.h"    // Disk class
 #include "../include/fat.h"     // Disk class
 #include "../include/parser.h"  // Parser, get cli tokens with grammar
@@ -12,8 +14,14 @@ int TRACK_TIME = 10;  // in microseconds
 int CYLINDERS = 5;    // default cylinders
 int SECTORS = 10;     // default sectors per cylinders
 
+// Structure for connection handler argument
+struct connection_info {
+    int sockfd;
+    struct sockaddr_in client_addr;
+};
+
 // thread function when a connection is accepted
-void *connection_handler(void *socketfd);
+void *connection_handler(void *con_info);
 
 // FUNCTIONS TO HANDLE SERVER COMMANDS
 namespace fs {
@@ -60,9 +68,10 @@ void pwd(int sockfd, fs::FatFS &fatfs);
 int main(int argc, char *argv[]) {
     int port = 8000;
     sock::Server server;
-    int newsockfd, *thsockfd = nullptr;
+    int newsockfd = -1;
     pthread_t tid;
     pthread_attr_t attr;
+    connection_info *con_info;
 
     if(argc > 1) port = atoi(argv[1]);
     if(argc > 2) TRACK_TIME = atoi(argv[2]);
@@ -79,14 +88,15 @@ int main(int argc, char *argv[]) {
 
         // listen to incoming connections
         while((newsockfd = server.accept_connection()) > -1) {
-            thsockfd = new int;
-            *thsockfd = newsockfd;
+            con_info = new connection_info;
+            con_info->sockfd = newsockfd;
+            con_info->client_addr = server.client_addr();
 
             if(newsockfd < 0)
                 std::cerr << "ERROR on socket accept" << std::endl;
             else {
                 if(pthread_create(&tid, NULL, connection_handler,
-                                  (void *)thsockfd)) {
+                                  (void *)con_info)) {
                     std::cerr << "ERROR on creating new thread" << std::endl;
                 }
             }
@@ -100,12 +110,30 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-void *connection_handler(void *socketfd) {
-    // get sockfd and deallocate argument
-    int sockfd = *(int *)socketfd;
-    delete(int *)socketfd;
-    socketfd = nullptr;
+void *connection_handler(void *con_info) {
+    // get sockfd and client_addr
+    struct connection_info *con = (struct connection_info *)con_info;
+    int sockfd = con->sockfd;
+    struct sockaddr_in client_addr = con->client_addr;
 
+    // get client address IPv4
+    struct sockaddr_in *pV4Addr = (struct sockaddr_in *)&client_addr;
+    struct in_addr ipAddr = pV4Addr->sin_addr;
+
+    // convert IPv4 to string
+    char ipv4[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &ipAddr, ipv4, INET_ADDRSTRLEN);
+
+    // get port
+    socklen_t len = sizeof(client_addr);
+    getpeername(sockfd, (struct sockaddr *)&client_addr, &len);
+    unsigned short int port = client_addr.sin_port;
+
+    // deallocate argument
+    delete(connection_info *)con_info;
+    con_info = nullptr;
+
+    // fs variables
     bool exit = false;
     std::string client_msg;
     Parser parser;
@@ -141,7 +169,7 @@ void *connection_handler(void *socketfd) {
         "Please create and format filesystem with 'mkfs' command";
     std::string disk_exists = "ERROR filesystem exists";
 
-    std::cout << "Serving client" << std::endl;
+    std::cout << "Serving client@" << ipv4 << ":" << port << std::endl;
 
     // try to open disk if disk file exists
     try {

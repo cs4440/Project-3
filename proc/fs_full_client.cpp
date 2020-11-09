@@ -1,5 +1,6 @@
-#include <cstdlib>                  // atoi()
-#include <iostream>                 // io stream
+#include <cstdlib>   // atoi()
+#include <iostream>  // io stream
+
 #include "../include/ansi_style.h"  // terminaal ANSI styling in unix
 #include "../include/socket.h"      // socket Client class
 
@@ -16,7 +17,7 @@ int main(int argc, char* argv[]) {
         client.set_host(host);
         client.set_port(port);
         client.start();
-        std::cout << "Client connected to server " << host << ":" << port
+        std::cout << "Client connected to server@" << host << ":" << port
                   << std::endl;
 
         sockfd = client.sockfd();

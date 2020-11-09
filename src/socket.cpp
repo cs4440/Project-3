@@ -3,7 +3,7 @@
 namespace sock {
 
 Socket::Socket(int port) : _port(port) {
-    memset((void *)&_serv_addr, 0, sizeof(_serv_addr));
+    memset((void *)&_sock_addr, 0, sizeof(_sock_addr));
     _sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if(_sockfd < 0) throw std::runtime_error("ERROR opening socket");
 }
@@ -37,12 +37,12 @@ void Server::start() {
                                  std::to_string(_opt));
 
     // set server address options
-    _serv_addr.sin_family = AF_INET;
-    _serv_addr.sin_addr.s_addr = INADDR_ANY;  // any address
-    _serv_addr.sin_port = htons(_port);  // convert port to network byte order
+    _sock_addr.sin_family = AF_INET;
+    _sock_addr.sin_addr.s_addr = INADDR_ANY;  // any address
+    _sock_addr.sin_port = htons(_port);  // convert port to network byte order
 
     // bind server address and port to socket
-    if(bind(_sockfd, (struct sockaddr *)&_serv_addr, sizeof(_serv_addr)) < 0)
+    if(bind(_sockfd, (struct sockaddr *)&_sock_addr, sizeof(_sock_addr)) < 0)
         throw std::runtime_error("ERROR on binding on port " +
                                  std::to_string(_port));
 
@@ -61,19 +61,23 @@ int Server::accept_connection() {
     return _newsockfd;
 }
 
+struct sockaddr_in Server::client_addr() {
+    return _cli_addr;
+}
+
 Client::Client(std::string host, int port) : Socket(port), _host(host) {}
 
 void Client::start() {
     // set server address options
-    _serv_addr.sin_family = AF_INET;
-    _serv_addr.sin_port = htons(_port);
+    _sock_addr.sin_family = AF_INET;
+    _sock_addr.sin_port = htons(_port);
 
     // Convert IPv4 and IPv6 addresses from text to binary form
-    if(inet_pton(AF_INET, _host.c_str(), &_serv_addr.sin_addr) < 0)
+    if(inet_pton(AF_INET, _host.c_str(), &_sock_addr.sin_addr) < 0)
         throw std::runtime_error("ERROR Invalid address port " +
                                  std::to_string(_port));
 
-    if(connect(_sockfd, (struct sockaddr *)&_serv_addr, sizeof(_serv_addr)) <
+    if(connect(_sockfd, (struct sockaddr *)&_sock_addr, sizeof(_sock_addr)) <
        0) {
         throw std::runtime_error("ERROR connecting");
     }
