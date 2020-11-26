@@ -1,8 +1,9 @@
 CXX             := g++
 DEBUG_LEVEL     := -g
 EXTRA_CCFLAGS   := -Wall -Werror=return-type -Wextra -pedantic
-CXXFLAGS        := $(DEBUG_LEVEL) $(EXTRA_CCFLAGS)
-LDFLAGS         := -lm -lstdc++ -pthread
+OPT             := -O0
+CXXFLAGS        := $(DEBUG_LEVEL) $(EXTRA_CCFLAGS) $(OPT)
+LDLIBS          := -lm -lstdc++ -pthread
 
 INC             := include
 SRC             := src
@@ -37,7 +38,7 @@ all: $(ALL)
 basic-server: $(BASIC_SERVER)
 
 basic_server: basic_server.o
-	$(CXX) -o $@ $^ $(LDFLAGS)
+	$(CXX) -o $@ $^ $(LDLIBS)
 
 basic_server.o: $(PROC)/basic_server.cpp
 	$(CXX) $(CXXFLAGS) -c $<
@@ -51,7 +52,7 @@ basic_client.o: $(PROC)/basic_client.cpp
 dir-listing: $(DIR_LISTING)
 
 dir_listing_server: dir_listing_server.o
-	$(CXX) -o $@ $^ $(LDFLAGS)
+	$(CXX) -o $@ $^ $(LDLIBS)
 
 dir_listing_server.o: $(PROC)/dir_listing_server.cpp
 	$(CXX) $(CXXFLAGS) -c $<
@@ -67,19 +68,19 @@ dir_listing_client.o: $(PROC)/dir_listing_client.cpp
 disk-server: $(DISK_SERVER)
 
 disk_client: disk_client.o $(SOCKET)
-	$(CXX) -o $@ $^ $(LDFLAGS)
+	$(CXX) -o $@ $^ $(LDLIBS)
 
 disk_client.o: $(PROC)/disk_client.cpp
 	$(CXX) $(CXXFLAGS) -c $<
 
 disk_client_rand: disk_client_rand.o $(SOCKET)
-	$(CXX) -o $@ $^ $(LDFLAGS)
+	$(CXX) -o $@ $^ $(LDLIBS)
 
 disk_client_rand.o: $(PROC)/disk_client_rand.cpp
 	$(CXX) $(CXXFLAGS) -c $<
 
 disk_server: disk_server.o $(PARSER) $(DISK) $(SOCKET)
-	$(CXX) -o $@ $^ $(LDFLAGS)
+	$(CXX) -o $@ $^ $(LDLIBS)
 
 disk_server.o: $(PROC)/disk_server.cpp
 	$(CXX) $(CXXFLAGS) -c $<
@@ -89,13 +90,13 @@ disk_server.o: $(PROC)/disk_server.cpp
 fs-basic: $(FS_BASIC)
 
 fs_basic_client: fs_basic_client.o $(SOCKET)
-	$(CXX) -o $@ $^ $(LDFLAGS)
+	$(CXX) -o $@ $^ $(LDLIBS)
 
 fs_basic_client.o: $(PROC)/fs_basic_client.cpp
 	$(CXX) $(CXXFLAGS) -c $<
 
 fs_basic_server: fs_basic_server.o  $(PARSER) $(FS) $(SOCKET)
-	$(CXX) -o $@ $^ $(LDFLAGS)
+	$(CXX) -o $@ $^ $(LDLIBS)
 
 fs_basic_server.o: $(PROC)/fs_basic_server.cpp
 	$(CXX) $(CXXFLAGS) -c $<
@@ -105,14 +106,14 @@ fs_basic_server.o: $(PROC)/fs_basic_server.cpp
 fs-full: $(FS_FULL)
 
 fs_full_client: fs_full_client.o $(SOCKET)
-	$(CXX) -o $@ $^ $(LDFLAGS)
+	$(CXX) -o $@ $^ $(LDLIBS)
 
 fs_full_client.o: $(PROC)/fs_full_client.cpp\
 	${INC}/ansi_style.h
 	$(CXX) $(CXXFLAGS) -c $<
 
 fs_full_server: fs_full_server.o  $(PARSER) $(FS) $(SOCKET)
-	$(CXX) -o $@ $^ $(LDFLAGS)
+	$(CXX) -o $@ $^ $(LDLIBS)
 
 fs_full_server.o: $(PROC)/fs_full_server.cpp
 	$(CXX) $(CXXFLAGS) -c $<
