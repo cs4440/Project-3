@@ -1,6 +1,5 @@
-**/*.gch
-**/*.o
-**/*.out
-**/tmp
-**/*.vscode
-
+*.gch
+*.o
+*.out
+tmp/
+.vscode/
